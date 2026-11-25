@@ -40,6 +40,10 @@ struct Ctl {
     float w = 0.0f;                      /* LEDs: the rows' width */
     bool cycle = false;                  /* a button that steps through the values (else a switch) */
     float rh = LR;                       /* LEDs: a row's height */
+    float ks = KS;                       /* a knob's size */
+    float vw = 120.0f;                   /* its value's width */
+    int first = 0;                       /* LEDs: the value of the first row (OSC SHAPE: no LED for OFF) */
+    int slot = -1;                       /* MOD: shown only while this slot is selected (-1: always) */
 };
 struct Sec {
     Rectangle<float> r;
@@ -50,6 +54,16 @@ struct Page {
     std::vector<Sec> secs;
     std::vector<Ctl> ctls;
     std::vector<std::pair<Point<float>, String>> notes;   /* small print */
+    /* MOD: the display, a table of the eight slots (each cell its parameter's value), a row tapped selects it */
+    Rectangle<int> oled;
+    struct Cell {
+        String id;
+        Rectangle<int> r;
+        bool left = true;
+    };
+    std::vector<Cell> cells;
+    std::vector<Rectangle<int>> selRows;   /* the slot numbers (tapped: that slot) */
+    Rectangle<int> slotShow;               /* "SLOT n" over the knobs */
 };
 
 int layerIndex(const String &id)
@@ -99,7 +113,7 @@ bool bipolarOf(const String &id)
 struct Builder {
     Page pg;
     void sec(float x0, float y0, float x1, float y1, const char *t) { pg.secs.push_back({{x0, y0, x1 - x0, y1 - y0}, t}); }
-    void K(float x, float y, const char *id, const char *leg) { pg.ctls.push_back({Ctl::knob, id, x, y, leg, {}, 0.0f, false}); }
+    void K(float x, float y, const char *id, const char *leg) { pg.ctls.push_back({Ctl::knob, id, x, y, leg, {}, 0.0f, false, LR, KS}); }
     void B(float x, float y, const char *id, const char *leg, bool cycle = false) { pg.ctls.push_back({Ctl::button, id, x, y, leg, {}, 0.0f, cycle}); }
     void L(float x, float y, const char *id, float w, StringArray names = {}, float rh = LR)
     {
@@ -109,189 +123,215 @@ struct Builder {
     void note(float x, float y, const char *t) { pg.notes.push_back({{x, y}, t}); }
 };
 
-/* rows: the top band's knob lines at 78 and 206, the bottom band's at 366 and 494 */
+/* The pages: the Rev2's own sections, each laid out as on the Rev2's panel (two rows where the Rev2 has two), filling
+ * the screen; every knob with its legend and, under it, its value (ARIA's way). Six pages, each for layer A (a press)
+ * and layer B (a second press):
+ *   OSC     OSCILLATORS (both rows: OSC 1 above, OSC 2 below, SYNC between)
+ *   FILTER  LOW-PASS FILTER (its knobs above, 4 POLE and its envelope below)
+ *   ENV     AMPLIFIER | AUXILIARY ENVELOPE
+ *   LFO     the four LFOs, each as the Rev2's LFO section
+ *   MOD     the eight MODULATION slots
+ *   PLAY    EFFECT | ARP + CLOCK | GLIDE, UNISON, HOLD; SEQUENCER | PROGRAM | MISC PARAMS */
+constexpr float TOP0 = 18, TOP1 = 290, BOT0 = 306, BOT1 = 576;
+struct It {
+    char kind;                           /* 'k' knob, 'b' button, 'l' an LED list (its id's choices), ' ' a gap */
+    const char *id, *legend;
+    int first = 0;                       /* 'l': the value of its first LED */
+    int count = 0;                       /* 'l': how many (0: all) */
+};
+/* a section of rows, each row's items spread evenly across it; ks: the knobs' size */
+void gridSec(Builder &b, float x0, float x1, float y0, float y1, const char *title, std::vector<std::vector<It>> rows, float ks)
+{
+    b.sec(x0, y0, x1, y1, title);
+    float h = (y1 - y0 - 8.0f) / (float)rows.size();
+    for (size_t r = 0; r < rows.size(); r++) {
+        float w = (x1 - x0 - 12.0f) / (float)rows[r].size();
+        float cy = y0 + 8.0f + h * (float)r + (h - ks - 46.0f) * 0.5f + ks * 0.5f;
+        for (size_t i = 0; i < rows[r].size(); i++) {
+            const It &it = rows[r][i];
+            float cx = x0 + 6.0f + w * ((float)i + 0.5f);
+            if (it.kind == 'k')
+                b.pg.ctls.push_back({Ctl::knob, it.id, cx, cy, it.legend, {}, 0.0f, false, LR, ks, std::min(w - 8.0f, 170.0f)});
+            else if (it.kind == 'b')
+                b.B(cx, cy, it.id, it.legend, std::string(it.legend) == "SHAPE");
+            else if (it.kind == 'l') {
+                auto rg = rangeOf(it.id);
+                StringArray names;
+                int n = it.count ? it.count : rg.names.size() - it.first;
+                for (int k = 0; k < n; k++)
+                    names.add(rg.names[it.first + k]);
+                float rh = std::min(24.0f, (h - 34.0f) / (float)n), mid = y0 + 8.0f + h * ((float)r + 0.5f) - 4.0f;
+                Ctl c{Ctl::leds, it.id, cx - w * 0.5f + 4.0f, mid - rh * (float)n * 0.5f, "", names, w - 30.0f, false, rh};
+                c.first = it.first;
+                b.pg.ctls.push_back(c);
+            }
+        }
+    }
+}
+
 std::vector<Page> pages()
 {
     std::vector<Page> ps;
-    const float T1 = 80, T2 = 208, B1 = 368, B2 = 496;
+    const float L = 14, R = 1266;
     {
         Builder b;
         b.pg.name = "OSC";
-        b.sec(14, 16, 1266, 284, "OSCILLATORS");
-        b.K(80, T1, "o1_freq", "OSC 1 FREQ");
-        b.K(200, T1, "o1_fine", "FINE TUNE");
-        b.B(304, T1 - 8, "o1_shape", "SHAPE", true);
-        b.L(344, T1 - 50, "o1_shape", 120);
-        b.K(560, T1, "o1_shmod", "SHAPE MOD");
-        b.K(690, T1, "sub", "SUB OCTAVE");
-        b.K(820, T1, "noise", "NOISE");
-        b.K(80, T2, "o2_freq", "OSC 2 FREQ");
-        b.K(200, T2, "o2_fine", "FINE TUNE");
-        b.B(304, T2 - 8, "o2_shape", "SHAPE", true);
-        b.L(344, T2 - 50, "o2_shape", 120);
-        b.K(560, T2, "o2_shmod", "SHAPE MOD");
-        b.K(690, T2, "osc_mix", "OSC MIX");
-        b.K(820, T2, "slop", "OSC SLOP");
-        b.B(960, T1 - 8, "sync", "SYNC");
-        b.B(1060, T1 - 8, "o1_key", "OSC 1 KEY");
-        b.B(1160, T1 - 8, "o2_key", "OSC 2 KEY");
-        b.B(1060, T2 - 8, "o1_reset", "OSC 1 RESET");
-        b.B(1160, T2 - 8, "o2_reset", "OSC 2 RESET");
-        b.sec(14, 304, 640, 572, "GLIDE");
-        b.B(80, B1 - 8, "glide", "GLIDE");
-        b.K(200, B1, "o1_glide", "OSC 1 RATE");
-        b.K(330, B1, "o2_glide", "OSC 2 RATE");
-        b.K(470, B1, "glide_mode", "MODE");
-        b.L(540, B1 - 44, "glide_mode", 96, {"Rate", "Rate A", "Time", "Time A"});
-        b.K(200, B2, "pb_range", "BEND RANGE");
-        b.sec(652, 304, 1266, 572, "UNISON");
-        b.B(720, B1 - 8, "unison", "UNISON");
-        b.K(840, B1, "uni_mode", "VOICES");
-        b.K(970, B1, "uni_detune", "DETUNE");
-        b.K(1100, B1, "key_mode", "KEY MODE");
-        b.L(1150, B1 - 64, "key_mode", 110, {"Low", "High", "Last", "Low R", "High R", "Last R"});
-        b.note(840, B2 - 10, "16 voices, or CHORD:");
-        b.note(840, B2 + 12, "the chord held when UNISON went on");
+        gridSec(b, L, R, TOP0, BOT1, "OSCILLATORS",
+                {{{'k', "o1_freq", "OSC 1 FREQ"}, {'k', "o1_fine", "FINE TUNE"}, {'b', "o1_shape", "SHAPE"},
+                  {'l', "o1_shape", "", 1}, {'k', "o1_shmod", "SHAPE MOD"}, {'k', "sub", "SUB OCTAVE"}, {'k', "noise", "NOISE"}},
+                 {{'k', "o2_freq", "OSC 2 FREQ"}, {'k', "o2_fine", "FINE TUNE"}, {'b', "o2_shape", "SHAPE"},
+                  {'l', "o2_shape", "", 1}, {'k', "o2_shmod", "SHAPE MOD"}, {'k', "osc_mix", "OSC MIX"}, {'k', "slop", "OSC SLOP"}}},
+                104);
+        /* SYNC: between the rows, between FREQ and FINE TUNE (as on the Rev2) */
+        float w = (R - L - 12.0f) / 7.0f;
+        b.B(L + 6.0f + w, (TOP0 + BOT1) * 0.5f + 4.0f, "sync", "SYNC");
         ps.push_back(b.pg);
     }
     {
         Builder b;
         b.pg.name = "FILTER";
-        b.sec(14, 16, 1266, 284, "LOW-PASS FILTER");
-        const char *top[6][2] = {{"cutoff", "CUTOFF"}, {"reso", "RESONANCE"}, {"fenv_amt", "ENV AMOUNT"}, {"fvel", "VELOCITY"},
-                                 {"keyamt", "KEY AMOUNT"}, {"audiomod", "AUDIO MOD"}};
-        for (int i = 0; i < 6; i++)
-            b.K(110.0f + 205.0f * (float)i, T1, top[i][0], top[i][1]);
-        b.B(110, T2 - 8, "pole4", "4 POLE");
-        const char *bot[5][2] = {{"fdel", "DELAY"}, {"fatt", "ATTACK"}, {"fdec", "DECAY"}, {"fsus", "SUSTAIN"}, {"frel", "RELEASE"}};
-        for (int i = 0; i < 5; i++)
-            b.K(315.0f + 205.0f * (float)i, T2, bot[i][0], bot[i][1]);
-        b.sec(14, 304, 900, 572, "AMPLIFIER");
-        const char *at[4][2] = {{"pan_spread", "PAN SPREAD"}, {"aenv_amt", "ENV AMOUNT"}, {"avel", "VELOCITY"}, {"adel", "DELAY"}};
-        const char *ab[4][2] = {{"aatt", "ATTACK"}, {"adec", "DECAY"}, {"asus", "SUSTAIN"}, {"arel", "RELEASE"}};
-        for (int i = 0; i < 4; i++) {
-            b.K(110.0f + 205.0f * (float)i, B1, at[i][0], at[i][1]);
-            b.K(110.0f + 205.0f * (float)i, B2, ab[i][0], ab[i][1]);
-        }
-        b.sec(912, 304, 1266, 572, "LEVELS");
-        b.K(1000, B1, "pgm_vol", "PROGRAM VOL");
-        b.K(1170, B1, "vca_level", "VCA LEVEL");
-        b.B(1000, B2 - 8, "pan_mode", "PAN FIXED");
+        gridSec(b, L, R, TOP0, BOT1, "LOW-PASS FILTER",
+                {{{'k', "cutoff", "CUTOFF"}, {'k', "reso", "RESONANCE"}, {'k', "fenv_amt", "ENV AMOUNT"}, {'k', "fvel", "VELOCITY"},
+                  {'k', "keyamt", "KEY AMOUNT"}, {'k', "audiomod", "AUDIO MOD"}},
+                 {{'b', "pole4", "4 POLE"}, {'k', "fdel", "DELAY"}, {'k', "fatt", "ATTACK"}, {'k', "fdec", "DECAY"},
+                  {'k', "fsus", "SUSTAIN"}, {'k', "frel", "RELEASE"}}},
+                110);
         ps.push_back(b.pg);
     }
     {
         Builder b;
-        b.pg.name = "MOD";
-        b.sec(14, 16, 1266, 284, "MODULATION 1-4");
-        b.sec(14, 304, 1266, 572, "MODULATION 5-8");
-        for (int k = 0; k < 8; k++) {
-            float x0 = 30.0f + 310.0f * (float)(k % 4), y = k < 4 ? T1 + 50.0f : B1 + 50.0f;
-            String n = String(k + 1);
-            static char ids[8][3][16];
-            std::snprintf(ids[k][0], 16, "mod%d_src", k + 1);
-            std::snprintf(ids[k][1], 16, "mod%d_dst", k + 1);
-            std::snprintf(ids[k][2], 16, "mod%d_amt", k + 1);
-            b.K(x0 + 50.0f, y, ids[k][0], "SOURCE");
-            b.K(x0 + 145.0f, y, ids[k][1], "DEST");
-            b.K(x0 + 240.0f, y, ids[k][2], "AMOUNT");
-            static char lbl[8][16];
-            std::snprintf(lbl[k], 16, "SLOT %d", k + 1);
-            b.note(x0 + 145.0f, y - 74.0f, lbl[k]);
-        }
+        b.pg.name = "ENV";
+        gridSec(b, L, 634, TOP0, BOT1, "AMPLIFIER",
+                {{{'k', "pan_spread", "PAN SPREAD"}, {'k', "aenv_amt", "ENV AMOUNT"}, {'k', "avel", "VELOCITY"}, {'k', "adel", "DELAY"}},
+                 {{'k', "aatt", "ATTACK"}, {'k', "adec", "DECAY"}, {'k', "asus", "SUSTAIN"}, {'k', "arel", "RELEASE"}}},
+                100);
+        gridSec(b, 646, R, TOP0, BOT1, "AUXILIARY ENVELOPE",
+                {{{'k', "e3_dest", "DESTINATION"}, {'k', "e3_amt", "ENV AMOUNT"}, {'k', "e3_vel", "VELOCITY"}, {'k', "e3del", "DELAY"}},
+                 {{'k', "e3att", "ATTACK"}, {'k', "e3dec", "DECAY"}, {'k', "e3sus", "SUSTAIN"}, {'k', "e3rel", "RELEASE"}}},
+                100);
         ps.push_back(b.pg);
     }
     {
         Builder b;
         b.pg.name = "LFO";
-        const char *T[4] = {"LFO 1", "LFO 2", "LFO 3", "LFO 4"};
+        static char ids[4][6][16];
+        static const char *T[4] = {"LFO 1", "LFO 2", "LFO 3", "LFO 4"};
+        const char *suf[6] = {"freq", "shape", "amt", "dest", "clk", "key"};
         for (int k = 0; k < 4; k++) {
-            float x0 = k % 2 ? 652.0f : 14.0f, y0 = k < 2 ? 16.0f : 304.0f;
-            b.sec(x0, y0, x0 + 614.0f, y0 + 268.0f, T[k]);
-            static char ids[4][6][16];
-            const char *suf[6] = {"freq", "shape", "amt", "dest", "clk", "key"};
             for (int i = 0; i < 6; i++)
                 std::snprintf(ids[k][i], 16, "lfo%d_%s", k + 1, suf[i]);
-            float y = y0 + 64.0f;
-            b.B(x0 + 60.0f, y - 8.0f, ids[k][1], "SHAPE", true);
-            b.L(x0 + 100.0f, y - 52.0f, ids[k][1], 110);
-            b.K(x0 + 290.0f, y, ids[k][0], "FREQUENCY");
-            b.K(x0 + 420.0f, y, ids[k][2], "AMOUNT");
-            b.K(x0 + 540.0f, y, ids[k][3], "DESTINATION");
-            b.B(x0 + 290.0f, y + 128.0f - 8.0f, ids[k][4], "CLK SYNC");
-            b.B(x0 + 420.0f, y + 128.0f - 8.0f, ids[k][5], "KEY SYNC");
+            float x0 = k % 2 ? 646.0f : L, x1 = k % 2 ? R : 634.0f;
+            /* as the Rev2's LFO section: SHAPE and its LEDs, FREQUENCY, CLK SYNC; DESTINATION, AMOUNT, KEY SYNC */
+            gridSec(b, x0, x1, k < 2 ? TOP0 : BOT0, k < 2 ? TOP1 : BOT1, T[k],
+                    {{{'b', ids[k][1], "SHAPE"}, {'l', ids[k][1], ""}, {'k', ids[k][0], "FREQUENCY"}, {'b', ids[k][4], "CLK SYNC"}},
+                     {{' ', "", ""}, {'k', ids[k][3], "DESTINATION"}, {'k', ids[k][2], "AMOUNT"}, {'b', ids[k][5], "KEY SYNC"}}},
+                    68);
         }
         ps.push_back(b.pg);
     }
     {
         Builder b;
-        b.pg.name = "ENV3/FX";
-        b.sec(14, 16, 1266, 284, "AUXILIARY ENVELOPE");
-        const char *t[8][2] = {{"e3_dest", "DESTINATION"}, {"e3_amt", "ENV AMOUNT"}, {"e3_vel", "VELOCITY"}, {"e3del", "DELAY"},
-                               {"e3att", "ATTACK"}, {"e3dec", "DECAY"}, {"e3sus", "SUSTAIN"}, {"e3rel", "RELEASE"}};
-        for (int i = 0; i < 4; i++) {
-            b.K(110.0f + 205.0f * (float)i, T1, t[i][0], t[i][1]);
-            b.K(110.0f + 205.0f * (float)i, T2, t[i + 4][0], t[i + 4][1]);
+        b.pg.name = "MOD";
+        /* the display: all eight slots at once, as the Rev2's screen shows the one being edited */
+        b.pg.oled = Rectangle<int>(24, 28, 822, 538);
+        static char ids[8][3][16];
+        for (int k = 0; k < 8; k++) {
+            std::snprintf(ids[k][0], 16, "mod%d_src", k + 1);
+            std::snprintf(ids[k][1], 16, "mod%d_dst", k + 1);
+            std::snprintf(ids[k][2], 16, "mod%d_amt", k + 1);
+            int y = 28 + 52 + k * 60;
+            b.pg.selRows.push_back(Rectangle<int>(30, y, 82, 56));
+            b.pg.cells.push_back({ids[k][0], Rectangle<int>(24 + 120, y + 8, 260, 40), true});
+            b.pg.cells.push_back({ids[k][2], Rectangle<int>(24 + 390, y + 8, 120, 40), true});
+            b.pg.cells.push_back({ids[k][1], Rectangle<int>(24 + 530, y + 8, 280, 40), true});
         }
-        b.B(1000, T1 - 8, "e3_repeat", "REPEAT");
-        b.sec(14, 304, 1266, 572, "EFFECT");
-        b.B(80, B1 - 8, "fx_on", "ON/OFF");
-        b.B(80, B2 - 8, "fx_clk", "CLK SYNC");
-        b.K(250, B1, "fx_type", "SELECT");
-        b.L(320, 318, "fx_type", 150, {}, 18.0f);
-        b.K(620, B1, "fx_mix", "MIX");
-        b.K(780, B1, "fx_p1", "PARAM 1");
-        b.K(940, B1, "fx_p2", "PARAM 2");
+        /* as the Rev2's MODULATION section: SOURCE and DESTINATION on the left, the slot and AMOUNT on the right; the
+         * knobs edit the slot selected (a slot number tapped on the display) */
+        b.sec(864, TOP0, R, BOT1, "MODULATION");
+        b.pg.slotShow = Rectangle<int>(1065 + 12, 92, 150, 56);
+        for (int k = 0; k < 8; k++) {
+            const float xs[2] = {970.0f, 1152.0f};
+            Ctl src{Ctl::knob, ids[k][0], xs[0], 150.0f, "SOURCE", {}, 0.0f, false, LR, 104, 176};
+            Ctl dst{Ctl::knob, ids[k][1], xs[0], 420.0f, "DESTINATION", {}, 0.0f, false, LR, 104, 176};
+            Ctl amt{Ctl::knob, ids[k][2], xs[1], 420.0f, "AMOUNT", {}, 0.0f, false, LR, 104, 176};
+            src.slot = dst.slot = amt.slot = k;
+            b.pg.ctls.push_back(src);
+            b.pg.ctls.push_back(dst);
+            b.pg.ctls.push_back(amt);
+        }
         ps.push_back(b.pg);
     }
     {
         Builder b;
         b.pg.name = "PLAY";
-        b.sec(14, 16, 560, 284, "ARP");
-        b.B(80, T1 - 8, "arp_on", "ON/OFF");
-        b.K(200, T1, "arp_mode", "MODE");
-        b.L(250, T1 - 44, "arp_mode", 100);
-        b.K(420, T1, "arp_range", "RANGE");
-        b.K(200, T2, "arp_repeat", "REPEATS");
-        b.B(420, T2 - 8, "arp_relatch", "RELATCH");
-        b.B(80, T2 - 8, "hold", "HOLD");
-        b.sec(572, 16, 760, 284, "CLOCK");
-        b.K(666, T1, "divide", "DIVIDE");
-        b.note(666, T2 - 20, "on the MPC's tempo");
-        b.sec(772, 16, 1266, 284, "SEQUENCER");
-        b.B(840, T1 - 8, "seq_on", "PLAY");
-        b.L(900, T1 - 30, "seq_type", 90);
-        b.K(1080, T1, "seq_mode", "GATED MODE");
-        b.note(1019, T2 - 8, "the program's sequence: PLAY");
-        b.sec(14, 304, 760, 572, "LAYERS");
-        b.L(40, B1 - 30, "layer_mode", 140);
-        b.K(330, B1, "split_point", "SPLIT POINT");
-        b.K(330, B2, "pgm_vol", "PROGRAM VOL");
-        b.K(560, B1, "pb_range", "BEND RANGE");
-        b.note(160, B2 - 20, "layer B: press the function key again");
-        b.sec(772, 304, 1266, 572, "VOICES");
-        b.L(800, B1 - 30, "voices", 120);
-        b.L(1000, B1 - 30, "quality", 110, {"ECO (2x)", "HIGH (4x)"});
-        b.note(1019, B2 - 20, "HIGH: the filters at 4x (more CPU)");
+        gridSec(b, L, 430, TOP0, TOP1, "EFFECT",
+                {{{'b', "fx_on", "ON/OFF"}, {'k', "fx_type", "SELECT"}, {'k', "fx_mix", "MIX"}},
+                 {{'b', "fx_clk", "CLK SYNC"}, {'k', "fx_p1", "PARAM 1"}, {'k', "fx_p2", "PARAM 2"}}},
+                58);
+        gridSec(b, 442, 858, TOP0, TOP1, "ARP",
+                {{{'b', "arp_on", "ON/OFF"}, {'k', "arp_mode", "MODE"}, {'k', "divide", "DIVIDE"}},
+                 {{'b', "arp_relatch", "RELATCH"}, {'k', "arp_range", "RANGE"}, {'k', "arp_repeat", "REPEATS"}}},
+                58);
+        gridSec(b, 870, R, TOP0, TOP1, "GLIDE / UNISON",
+                {{{'k', "o1_glide", "RATE OSC 1"}, {'k', "o2_glide", "RATE OSC 2"}, {'b', "glide", "GLIDE"}},
+                 {{'b', "unison", "UNISON"}, {'b', "hold", "HOLD"}, {'k', "pgm_vol", "VOLUME"}}},
+                58);
+        gridSec(b, L, 330, BOT0, BOT1, "SEQUENCER",
+                {{{'b', "seq_on", "PLAY"}, {'k', "seq_type", "TYPE"}, {'k', "seq_mode", "GATED MODE"}}}, 74);
+        gridSec(b, 342, 800, BOT0, BOT1, "PROGRAM",
+                {{{'k', "layer_mode", "STACK / SPLIT"}, {'k', "split_point", "SPLIT POINT"}, {'k', "voices", "VOICES"},
+                  {'k', "quality", "QUALITY"}}},
+                74);
+        gridSec(b, 812, R, BOT0, BOT1, "MISC PARAMS",
+                {{{'k', "glide_mode", "GLIDE MODE"}, {'k', "uni_mode", "UNI VOICES"}, {'k', "uni_detune", "DETUNE"},
+                  {'k', "key_mode", "KEY MODE"}, {'k', "pb_range", "BEND"}}},
+                66);
         ps.push_back(b.pg);
     }
     return ps;
 }
 
 /* ----------------------------------------------------------------------------- drawing --- */
+/* MOD's display: a dark glass with a thin bezel, the table's heads and lines */
+void drawOled(Graphics &g, const Page &pg)
+{
+    auto r = pg.oled.toFloat();
+    g.setColour(Colour(0xff0b0c0e));
+    g.fillRoundedRectangle(r.expanded(6.0f), 9.0f);
+    g.setColour(Colour(0xff2a2c30));
+    g.drawRoundedRectangle(r.expanded(6.0f), 9.0f, 1.5f);
+    g.setColour(col::oledBg);
+    g.fillRoundedRectangle(r, 5.0f);
+    g.setColour(col::oledDim);
+    g.setFont(font(Face::mono, 17.0f));
+    const char *head[4] = {"SLOT", "SOURCE", "AMOUNT", "DESTINATION"};
+    float hx[4] = {r.getX() + 16.0f, r.getX() + 120.0f, r.getX() + 390.0f, r.getX() + 530.0f};
+    for (int i = 0; i < 4; i++)
+        g.drawText(head[i], Rectangle<float>(hx[i], r.getY() + 12.0f, 260.0f, 24.0f), Justification::centredLeft, false);
+    g.drawHorizontalLine((int)r.getY() + 44, r.getX() + 12.0f, r.getRight() - 12.0f);
+    for (int k = 1; k < 8; k++) {
+        float y = (float)pg.selRows[(size_t)k].getY() - 1.0f;
+        g.setColour(col::oledDim.withAlpha(0.35f));
+        g.drawHorizontalLine((int)y, r.getX() + 12.0f, r.getRight() - 12.0f);
+    }
+}
+
 void drawPage(Graphics &g, const Page &pg, int layer)
 {
     auto r = Rectangle<float>(0.0f, 0.0f, (float)TW, (float)TH);
     drawPanelFace(g, r, 1.0f);
     for (auto &s : pg.secs)
         drawSection(g, s.r, s.title);
+    if (!pg.oled.isEmpty())
+        drawOled(g, pg);
     for (auto &c : pg.ctls) {
         if (c.kind == Ctl::knob)
-            drawLegend(g, c.legend, Rectangle<float>(c.x - 70.0f, c.y + KS * 0.5f + 4.0f, 140.0f, 20.0f), 16.0f);
+            drawLegend(g, c.legend, Rectangle<float>(c.x - 70.0f, c.y + c.ks * 0.5f + 4.0f, 140.0f, 20.0f), 15.5f);
         else if (c.kind == Ctl::button)
             drawLegend(g, c.legend, Rectangle<float>(c.x - 70.0f, c.y + BH * 0.5f + 6.0f, 140.0f, 20.0f), 15.0f);
         else {
             g.setColour(col::legend);
-            g.setFont(font(Face::title, 15.0f));
+            g.setFont(font(Face::title, 16.0f));
             for (int i = 0; i < c.names.size(); i++)
                 g.drawText(c.names[i], Rectangle<float>(c.x + 20.0f, c.y + c.rh * (float)i, c.w, c.rh), Justification::centredLeft, false);
         }
@@ -309,6 +349,26 @@ void drawPage(Graphics &g, const Page &pg, int layer)
     drawTag(g, Rectangle<float>(1280.0f - 18.0f - 200.0f, 628.0f - 14.0f - 24.0f, 200.0f, 24.0f));
     drawWear(g, r, 1.0f, {});
 }
+
+/* a knob's value, as the VST shows it */
+String valueText(const String &id, int v)
+{
+    int p = layerIndex(id);
+    if (p >= 0) {
+        char t[32];
+        paramText(p, v, t, sizeof t);
+        return t;
+    }
+    auto r = rangeOf(id);
+    if (!r.names.isEmpty())
+        return r.names[v - r.lo];
+    if (id == "split_point") {
+        static const char *N[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+        return String(N[v % 12]) + String(v / 12 - 1);
+    }
+    return String(v);
+}
+Rectangle<int> valueRect(const Ctl &c) { return Rectangle<float>(c.x - c.vw * 0.5f, c.y + c.ks * 0.5f + 24.0f, c.vw, 18.0f).toNearestInt(); }
 
 Image snapBackground(const Page &pg, int layer)
 {
@@ -337,12 +397,12 @@ Image drawCtl(const Image &bg, const Ctl &c, Rectangle<int> r, int index, int st
     g.addTransform(AffineTransform::translation((float)-r.getX(), (float)-r.getY()));
     if (c.kind == Ctl::knob) {
         float pos = steps > 1 ? (float)index / (float)(steps - 1) : 0.0f;
-        drawKnob(g, Rectangle<float>(KS, KS).withCentre({c.x, c.y}), pos, bipolarOf(c.id));
+        drawKnob(g, Rectangle<float>(c.ks, c.ks).withCentre({c.x, c.y}), pos, bipolarOf(c.id));
     } else if (c.kind == Ctl::button) {
         bool lit = !c.cycle && index > 0;
         drawButton(g, Rectangle<float>(BW, BH).withCentre({c.x, c.y}), lit, false, false);
     } else {
-        drawLed(g, {c.x + 8.0f, c.y + c.rh * ((float)row + 0.5f)}, 9.0f, index == row ? 1.0f : 0.0f);
+        drawLed(g, {c.x + 8.0f, c.y + c.rh * ((float)row + 0.5f)}, 10.0f, index == row ? 1.0f : 0.0f);
     }
     return img;
 }
@@ -378,9 +438,10 @@ int main(int argc, char **argv)
             for (auto &t : rg.names)
                 names.add(t);
             o->setProperty("names", names);
+            o->setProperty("slot", c.slot);
             String base = tag + "_" + String(n++).paddedLeft('0', 3) + "_" + c.id.retainCharacters("abcdefghijklmnopqrstuvwxyz0123456789_");
             if (c.kind == Ctl::knob) {
-                auto r = Rectangle<float>(KS + 6.0f, KS + 6.0f).withCentre({c.x, c.y}).toNearestInt();
+                auto r = Rectangle<float>(c.ks + 6.0f, c.ks + 6.0f).withCentre({c.x, c.y}).toNearestInt();
                 int frames = jmax(2, jmin(steps, 128, 9800 / r.getHeight()));
                 Image strip(Image::RGB, r.getWidth(), r.getHeight() * frames, true);
                 {
@@ -391,7 +452,22 @@ int main(int argc, char **argv)
                     }
                 }
                 writePng(strip, dir.getChildFile(base + "_knob.png"));
-                auto fr = r.getUnion(Rectangle<float>(c.x - 64.0f, c.y + KS * 0.5f, 128.0f, 26.0f).toNearestInt());
+                auto vr = valueRect(c);
+                {           /* the value under the legend: a strip of its own, a frame a value */
+                    Image vs(Image::RGB, vr.getWidth(), vr.getHeight() * steps, true);
+                    Graphics vg(vs);
+                    for (int f = 0; f < steps; f++) {
+                        vg.drawImageAt(bgA.getClippedImage(vr), 0, f * vr.getHeight());
+                        vg.setColour(col::dim);
+                        vg.setFont(font(Face::mono, 14.5f));
+                        vg.drawText(valueText(c.id, rg.lo + f), Rectangle<int>(0, f * vr.getHeight(), vr.getWidth(), vr.getHeight()),
+                                    Justification::centred, false);
+                    }
+                    writePng(vs, dir.getChildFile(base + "_value.png"));
+                }
+                o->setProperty("value", base + "_value.png");
+                o->setProperty("valueRect", rectVar(vr));
+                auto fr = r.getUnion(Rectangle<float>(c.x - c.vw * 0.5f, c.y + c.ks * 0.5f, c.vw, 44.0f).toNearestInt());
                 o->setProperty("kind", "knob");
                 o->setProperty("bipolar", bipolarOf(c.id));
                 o->setProperty("rect", rectVar(r));
@@ -421,6 +497,7 @@ int main(int argc, char **argv)
                     auto r = Rectangle<float>(c.x, c.y + c.rh * (float)k, 20.0f + c.w, c.rh).toNearestInt();
                     auto *ro = new DynamicObject();
                     ro->setProperty("rect", rectVar(r));
+                    ro->setProperty("value", c.first + k);
                     String on = base + "_led" + String(k) + "_on.png", off = base + "_led" + String(k) + "_off.png";
                     writePng(drawCtl(bgA, c, r, k, steps, k), dir.getChildFile(on));
                     writePng(drawCtl(bgA, c, r, -1, steps, k), dir.getChildFile(off));
@@ -433,6 +510,76 @@ int main(int argc, char **argv)
             list.add(var(o));
         }
         auto *po = new DynamicObject();
+        if (!pg.oled.isEmpty()) {
+            /* the display's cells: a strip each, a frame a value; the slot numbers (two looks); "SLOT n" */
+            Array<var> cells;
+            int ci = 0;
+            for (auto &cell : pg.cells) {
+                auto rg = rangeOf(cell.id);
+                int steps = rg.hi - rg.lo + 1;
+                Image st(Image::RGB, cell.r.getWidth(), cell.r.getHeight() * steps, true);
+                Graphics sg(st);
+                for (int f = 0; f < steps; f++) {
+                    sg.drawImageAt(bgA.getClippedImage(cell.r), 0, f * cell.r.getHeight());
+                    String t = valueText(cell.id, rg.lo + f);
+                    sg.setColour(t == "Off" ? col::oledDim : col::oled);
+                    sg.setFont(font(Face::mono, 23.0f));
+                    sg.drawText(t, Rectangle<int>(0, f * cell.r.getHeight(), cell.r.getWidth(), cell.r.getHeight()),
+                                Justification::centredLeft, false);
+                }
+                String f = tag + "_cell" + String(ci++).paddedLeft('0', 2) + ".png";
+                writePng(st, dir.getChildFile(f));
+                auto *co = new DynamicObject();
+                co->setProperty("id", cell.id);
+                co->setProperty("rect", rectVar(cell.r));
+                co->setProperty("strip", f);
+                co->setProperty("steps", steps);
+                cells.add(var(co));
+            }
+            po->setProperty("cells", cells);
+            Array<var> sel;
+            for (int k = 0; k < (int)pg.selRows.size(); k++) {
+                auto r = pg.selRows[(size_t)k];
+                auto *so = new DynamicObject();
+                so->setProperty("rect", rectVar(r));
+                for (int on = 0; on < 2; on++) {
+                    Image im(Image::RGB, r.getWidth(), r.getHeight(), true);
+                    Graphics ig(im);
+                    ig.drawImageAt(bgA.getClippedImage(r), 0, 0);
+                    auto box = Rectangle<float>(4.0f, 8.0f, (float)r.getWidth() - 8.0f, (float)r.getHeight() - 16.0f);
+                    if (on) {
+                        ig.setColour(col::oled);
+                        ig.fillRoundedRectangle(box, 4.0f);
+                    } else {
+                        ig.setColour(col::oledDim);
+                        ig.drawRoundedRectangle(box, 4.0f, 1.2f);
+                    }
+                    ig.setColour(on ? col::oledBg : col::oled);
+                    ig.setFont(font(Face::mono, 25.0f));
+                    ig.drawText(String(k + 1), box, Justification::centred, false);
+                    String f = tag + "_sel" + String(k) + (on ? "_on.png" : "_off.png");
+                    writePng(im, dir.getChildFile(f));
+                    so->setProperty(on ? "on" : "off", f);
+                }
+                sel.add(var(so));
+            }
+            po->setProperty("select", sel);
+            auto r = pg.slotShow;
+            Image st(Image::RGB, r.getWidth(), r.getHeight() * 8, true);
+            Graphics sg(st);
+            for (int k = 0; k < 8; k++) {
+                sg.drawImageAt(bgA.getClippedImage(r), 0, k * r.getHeight());
+                auto box = Rectangle<float>(2.0f, (float)(k * r.getHeight()) + 2.0f, (float)r.getWidth() - 4.0f, (float)r.getHeight() - 4.0f);
+                sg.setColour(col::oledBg);
+                sg.fillRoundedRectangle(box, 5.0f);
+                sg.setColour(col::oled);
+                sg.setFont(font(Face::mono, 26.0f));
+                sg.drawText("SLOT " + String(k + 1), box, Justification::centred, false);
+            }
+            writePng(st, dir.getChildFile(tag + "_slot.png"));
+            po->setProperty("slotShow", rectVar(r));
+            po->setProperty("slotStrip", tag + "_slot.png");
+        }
         po->setProperty("name", pg.name);
         po->setProperty("background", tag + "_panel.png");
         po->setProperty("labelA", tag + "_label_a.png");
