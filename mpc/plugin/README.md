@@ -25,18 +25,19 @@ denselben Ordner; jedes Gerät lädt seine eigene Datei darin.
 Sechs Seiten, auf den Funktionstasten. **Einmal drücken: Layer A, nochmal drücken: Layer B** (unten links steht,
 welcher Layer gerade zu sehen ist).
 
-| Taste | Was drauf ist |
+| Taste | Was drauf ist (aufgebaut wie die Bereiche am Rev2) |
 | --- | --- |
-| **OSC** | beide Oszillatoren (FREQ, FINE, SHAPE, SHAPE MOD), Sub, Noise, Mix, Slop, Sync, Key, Reset; Glide; Unison |
-| **FILTER** | Filter mit Hüllkurve, 4 POLE; Amp-Hüllkurve, Pan Spread; Lautstärken |
-| **MOD** | die acht Modulations-Slots (Quelle, Ziel, Menge) |
-| **LFO** | die vier LFOs (Form, Tempo, Menge, Ziel, Clock Sync, Key Sync) |
-| **ENV3/FX** | die dritte Hüllkurve (mit REPEAT); der Effekt (Typ, Mix, zwei Werte, Clock Sync) |
-| **PLAY** | Arp, Clock Divide, Sequencer PLAY; Layer-Modus (Single, Stack, Split) und Splitpunkt; 8/16 Stimmen, Qualität |
+| **OSC** | OSCILLATORS: oben Oszillator 1, unten Oszillator 2 (FREQ, FINE TUNE, SHAPE mit LEDs, SHAPE MOD), dazu Sub, Noise, Mix, Slop; SYNC dazwischen |
+| **FILTER** | LOW-PASS FILTER: oben Cutoff bis Audio Mod, unten 4 POLE und die Hüllkurve |
+| **ENV** | AMPLIFIER und AUXILIARY ENVELOPE nebeneinander |
+| **LFO** | die vier LFOs, jeder wie die LFO-Sektion am Rev2 |
+| **MOD** | Display mit allen 8 Modulations-Slots; eine Slot-Nummer antippen, dann bearbeiten SOURCE, DESTINATION und AMOUNT rechts diesen Slot |
+| **PLAY** | Effekt, Arp, Glide/Unison/Hold; Sequencer, Program (Stack/Split, Splitpunkt, 8/16 Stimmen, Qualität), Misc Params |
 
-Ein Knopf wird mit dem Finger hoch und runter gezogen oder mit seinem Q-Link gedreht; zweimal tippen öffnet den
+Unter jedem Regler steht sein Wert. Ein Knopf wird mit dem Finger hoch und runter gezogen oder mit seinem Q-Link gedreht; zweimal tippen öffnet den
 großen Regler der MPC (bei einer Auswahl die Liste). Ein Taster schaltet um, eine LED-Liste wählt aus. Die Q-Links
-liegen auf jeder Seite auf den Reglern mit Rahmen (obere Reihe der Q-Links = obere Gruppe).
+liegen auf jeder Seite auf den wichtigsten Reglern (obere Reihe der Q-Links = erste Gruppe; auf MOD: die Mengen und Ziele
+aller 8 Slots).
 
 Im **Program-Modus** (ohne Plugin-Seite) machen die Q-Links: 13-16 Cutoff, Resonance, Filter-Env, Key Amount;
 9-12 Filter-Hüllkurve; 5-8 Amp-Hüllkurve; 1-4 FX Mix, LFO 1 Menge, Unison Detune, Lautstärke (alles Layer A).

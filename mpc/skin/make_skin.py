@@ -12,7 +12,8 @@ this places each picture where it was cut from, bound to the MPC plugin's parame
   buttons    a picture for each value; a tap switches it (or steps to the next value: SHAPE)
   LED lists  each row a radio button
 
-The pages (the function keys): OSC, FILTER, MOD, LFO, ENV3/FX, PLAY, each twice: pressed once layer A, again layer B.
+The pages (the function keys): OSC, FILTER, ENV, LFO, MOD (with its display), PLAY, each twice: pressed once layer A,
+again layer B.
 On each the 16 Q-Links turn up to four groups, the top row of Q-Links the first group and so on down. Standard library
 only (Pillow, if there, makes the pictures smaller).
 """
@@ -52,28 +53,31 @@ def mpc(pid, layer):
 
 # The pages (the renderer's names) and their Q-Links' groups top down (a group as (ids, False): not framed)
 PAGES = [
-    ("OSC", [["o1_freq", "o1_fine", "o1_shmod", "sub"],
-             ["o2_freq", "o2_fine", "o2_shmod", "osc_mix"],
-             (["noise", "slop", "o1_glide", "o2_glide"], False),
-             (["uni_mode", "uni_detune", "key_mode", "pb_range"], False)]),
+    ("OSC", [(["o1_freq", "o1_fine", "o1_shmod", "sub"], False),
+             (["o2_freq", "o2_fine", "o2_shmod", "osc_mix"], False),
+             (["noise", "slop"], False)]),
     ("FILTER", [["cutoff", "reso", "fenv_amt", "fvel"],
+                (["keyamt", "audiomod"], False),
                 ["fatt", "fdec", "fsus", "frel"],
-                ["pan_spread", "aenv_amt", "avel", "adel"],
-                ["aatt", "adec", "asus", "arel"]]),
+                (["fdel"], False)]),
+    ("ENV", [(["aatt", "adec", "asus", "arel"], False),
+             (["pan_spread", "aenv_amt", "avel", "adel"], False),
+             (["e3att", "e3dec", "e3sus", "e3rel"], False),
+             (["e3_dest", "e3_amt", "e3_vel", "e3del"], False)]),
+    ("LFO", [(["lfo1_freq", "lfo1_amt", "lfo1_dest"], False),
+             (["lfo2_freq", "lfo2_amt", "lfo2_dest"], False),
+             (["lfo3_freq", "lfo3_amt", "lfo3_dest"], False),
+             (["lfo4_freq", "lfo4_amt", "lfo4_dest"], False)]),
     ("MOD", [(["mod1_amt", "mod2_amt", "mod3_amt", "mod4_amt"], False),
              (["mod5_amt", "mod6_amt", "mod7_amt", "mod8_amt"], False),
              (["mod1_dst", "mod2_dst", "mod3_dst", "mod4_dst"], False),
              (["mod5_dst", "mod6_dst", "mod7_dst", "mod8_dst"], False)]),
-    ("LFO", [["lfo1_freq", "lfo1_amt", "lfo1_dest", "lfo1_shape"],
-             ["lfo2_freq", "lfo2_amt", "lfo2_dest", "lfo2_shape"],
-             ["lfo3_freq", "lfo3_amt", "lfo3_dest", "lfo3_shape"],
-             ["lfo4_freq", "lfo4_amt", "lfo4_dest", "lfo4_shape"]]),
-    ("ENV3/FX", [["e3_dest", "e3_amt", "e3_vel", "e3del"],
-                 ["e3att", "e3dec", "e3sus", "e3rel"],
-                 ["fx_type", "fx_mix", "fx_p1", "fx_p2"]]),
-    ("PLAY", [(["arp_mode", "arp_range", "arp_repeat", "divide"], False),
-              (["seq_mode", "split_point", "pgm_vol", "pb_range"], False)]),
+    ("PLAY", [(["fx_type", "fx_mix", "fx_p1", "fx_p2"], False),
+              (["arp_mode", "divide", "arp_range", "arp_repeat"], False),
+              (["o1_glide", "o2_glide", "pgm_vol", "seq_mode"], False),
+              (["uni_mode", "uni_detune", "key_mode", "split_point"], False)]),
 ]
+MODH = "Local/8/modslot"                 # the slot MOD's knobs edit (the screen's own value)
 # Program (Track) mode: the knobs as the MPC's own program knobs (layer A), bottom left Q-Link 1
 PROGRAM_QLINKS = ["a_fx_mix", "a_lfo1_amt", "a_uni_detune", "volume",
                   "a_aatt", "a_adec", "a_asus", "a_arel",
@@ -208,7 +212,13 @@ def main(argv):
                          entry("focus", "Focus", focus, O(("version", 1), ("acceptsHWFocus", "No"), ("showWhenDataModelInvalid", "Show"),
                                                           ("whenVisible", "WhenFocussed"), ("boundsType", "Absolute"),
                                                           ("bounds", box((0, 0, fr[2], fr[3])))))])))
-                kids.append(entry(c["id"], name, O(("version", 1), ("handleName", "Data")), bounds(fr, "Yes"), [("Data", h)]))
+                hide = ["IndexedEnabling/%d/8/%s" % (c["slot"], MODH)] if c.get("slot", -1) >= 0 else None
+                if c.get("value"):           # its value under its legend
+                    vs = O(("version", 2), ("imageType", "FilmStrip"), ("colour", "0"), ("image", use(c["value"])),
+                           ("numFrames", c["steps"]), ("handleName", h))
+                    kids.append(entry(c["id"] + " value", "Image", vs, bounds(c["valueRect"], "No", hide)))
+                kids.append(entry(c["id"], name, O(("version", 1), ("handleName", "Data")), bounds(fr, "Yes", hide, "Hide"),
+                                  [("Data", h)]))
                 boxes.append((c["id"], fr))
                 legends.append((c["id"], fr))
             elif c["kind"] == "button":
@@ -220,13 +230,27 @@ def main(argv):
                     kids.append(entry(c["id"], "Button", data, bounds(c["rect"], "No", hide, "Hide")))
                 boxes.append((c["id"], c["rect"]))
             else:
-                if len(c["rows"]) != c["steps"]:
+                if len(c["rows"]) > c["steps"]:
                     sys.exit("%s: %d LEDs for %d values" % (c["id"], len(c["rows"]), c["steps"]))
                 for k, row in enumerate(c["rows"]):
-                    data = O(("version", 2), ("onImage", use(row["on"])), ("offImage", use(row["off"])), ("buttonId", k),
+                    data = O(("version", 2), ("onImage", use(row["on"])), ("offImage", use(row["off"])),
+                             ("buttonId", row.get("value", k)),
                              ("numButtonsInGroup", c["steps"]), ("handleName", h), ("gestureBehaviour", "Instant"))
                     kids.append(entry(c["id"], "Button", data, bounds(row["rect"])))
                     boxes.append((c["id"], row["rect"]))
+        if page.get("cells"):            # MOD's display: the eight slots' values, the slot numbers, SLOT n
+            for cell in page["cells"]:
+                st = O(("version", 2), ("imageType", "FilmStrip"), ("colour", "0"), ("image", use(cell["strip"])),
+                       ("numFrames", cell["steps"]), ("handleName", "Parameter %d" % mpc(cell["id"], layer)))
+                kids.append(entry(cell["id"] + " cell", "Image", st, bounds(cell["rect"])))
+            for k, row in enumerate(page["select"]):
+                data = O(("version", 2), ("onImage", use(row["on"])), ("offImage", use(row["off"])), ("buttonId", k),
+                         ("numButtonsInGroup", 8), ("handleName", MODH), ("gestureBehaviour", "Instant"))
+                kids.append(entry("mod slot", "Button", data, bounds(row["rect"])))
+                boxes.append(("", row["rect"]))
+            st = O(("version", 2), ("imageType", "FilmStrip"), ("colour", "0"), ("image", use(page["slotStrip"])),
+                   ("numFrames", 8), ("handleName", MODH))
+            kids.append(entry("mod slot shown", "Image", st, bounds(page["slotShow"])))
         return kids, boxes, legends
 
     def frame(group, boxes, legends):
