@@ -5,9 +5,11 @@
  * buffer size the same, 8 and 16 voices, the CPU. A failure exits non-zero. */
 #include "Engine.h"
 #include "Presets.h"
+#include "Rev2Syx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <string>
 #include <vector>
 
 using namespace rv;
@@ -271,6 +273,58 @@ int main()
         run(e, 48000 * 10);
         double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         std::printf("  CPU: 16 voices + 2 effects: %.1f %% of one core\n", s * 10.0);
+    }
+    /* a Rev2 SysEx program (made up here, packed as a Rev2 sends it): read back into a program */
+    {
+        std::vector<uint8_t> raw(2046, 0);
+        raw[0] = 36; raw[2] = 60; raw[4] = 4; raw[17] = 1; raw[22] = 100; raw[23] = 64; raw[32] = 200;
+        raw[53] = 80; raw[65] = 11; raw[77] = 13; raw[85] = 27; raw[93] = 3; raw[115] = 10; raw[116] = 1;
+        raw[124] = 16; raw[139] = 0; raw[231] = 2; raw[232] = 64;
+        raw[28] = 100; raw[33] = 127; raw[48] = 127;            /* (audible: volume, VCA env amount, sustain) */
+        const char *nm = "Test Patch";
+        for (int i = 0; i < 20; i++)
+            raw[235 + i] = (uint8_t)(i < 10 ? nm[i] : ' ');
+        raw[140] = 30; raw[141] = 126;                           /* gated track 1: one step, then its end */
+        raw[256] = 60; raw[320] = 128 + 100;                     /* poly: C4 at velocity 100, then a tie */
+        raw[257] = 0; raw[321] = 129;
+        raw[1024 + 22] = 7;                                      /* layer B's cutoff */
+        std::vector<uint8_t> sx = {0xF0, 0x01, 0x2F, 0x02, 2, 5};
+        for (size_t i = 0; i < raw.size(); i += 7) {
+            uint8_t ms = 0;
+            for (size_t j = 0; j < 7 && i + j < raw.size(); j++)
+                ms |= (uint8_t)((raw[i + j] >> 7) << j);
+            sx.push_back(ms);
+            for (size_t j = 0; j < 7 && i + j < raw.size(); j++)
+                sx.push_back(raw[i + j] & 0x7F);
+        }
+        sx.push_back(0xF7);
+        std::vector<uint8_t> file = {0xF0, 0x7E, 0x00, 0x06, 0x01, 0xF7};   /* other SysEx around it */
+        file.insert(file.end(), sx.begin(), sx.end());
+        auto got = rev2ReadSyx(file.data(), file.size());
+        CHECK(got.size() == 1, "rev2 syx: %d programs", (int)got.size());
+        if (got.size() == 1) {
+            const Program &p = got[0].program;
+            const int16_t *A = p.layer[0];
+            CHECK(got[0].bank == 2 && got[0].number == 5, "rev2 syx: place");
+            CHECK(std::string(p.name) == "Test Patch", "rev2 syx: name '%s'", p.name);
+            CHECK(A[L_O1_FREQ] == 36 && A[L_O1_FINE] == 10 && A[L_O1_SHAPE] == 4 && A[L_SYNC] == 1, "rev2 syx: osc");
+            CHECK(A[L_CUTOFF] == 100 && A[L_RESO] == 64 && A[L_FENV_AMT] == 73, "rev2 syx: filter");
+            CHECK(A[L_LFO1 + LFO_FREQ] == 80 && A[L_LFO1 + LFO_DEST] == 11, "rev2 syx: lfo");
+            CHECK(A[L_MOD1 + MOD_SRC] == 13 && A[L_MOD1 + MOD_AMT] == -100 && A[L_MOD1 + MOD_DST] == 3, "rev2 syx: mod");
+            CHECK(A[L_FX_ON] == 1 && A[L_FX_TYPE] == FX_REVERB, "rev2 syx: fx");
+            CHECK(A[L_UNI_MODE] == 17 && A[L_SEQ_TYPE] == ST_POLY && A[L_SEQ_ON] == 0, "rev2 syx: unison, seq");
+            CHECK(p.prog[G_LAYER_MODE] == LM_SPLIT && p.prog[G_SPLIT_POINT] == 64, "rev2 syx: split");
+            CHECK(p.layer[1][L_CUTOFF] == 7, "rev2 syx: layer B");
+            CHECK(p.seq[0].gated[0][0] == 30 && p.seq[0].gated[0][1] == GSEQ_RESET, "rev2 syx: gated");
+            CHECK(p.seq[0].note[0][0] == 62 && p.seq[0].vel[0][0] == 100 && p.seq[0].note[1][0] == PN_TIE &&
+                      p.seq[0].length == 2, "rev2 syx: poly seq");
+            Engine e;
+            e.prepare(48000.0);
+            e.setProgram(p);
+            chord(e, true);
+            Stats a = run(e, 48000);
+            CHECK(!a.nan && a.peak < 4.0f && a.rms > 0.001f, "rev2 syx: plays (peak %.2f rms %.4f)", a.peak, a.rms);
+        }
     }
     std::printf(fails ? "%d FAILED\n" : "all passed\n", fails);
     return fails ? 1 : 0;

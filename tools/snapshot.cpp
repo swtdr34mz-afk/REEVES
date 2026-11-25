@@ -12,6 +12,10 @@ int main(int argc, char **argv)
     float scale = argc > 2 ? (float)std::atof(argv[2]) : 1.0f;
     int prog = argc > 3 ? std::atoi(argv[3]) : 0;
     ReevesProcessor proc;
+    /* REEVES_IMPORT=<file.syx>: a Rev2 SysEx file imported first (its programs then follow the factory ones) */
+    auto imp = juce::SystemStats::getEnvironmentVariable("REEVES_IMPORT", {});
+    if (imp.isNotEmpty())
+        std::printf("imported %d programs; %d in all\n", proc.importRev2(juce::File(imp)), proc.getNumPrograms());
     proc.setCurrentProgram(prog);
     if (argc > 4)
         proc.editLayer = std::atoi(argv[4]);

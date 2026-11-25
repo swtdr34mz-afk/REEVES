@@ -45,6 +45,8 @@ public:
     void entryMenu(juce::Rectangle<int> screen);    /* the current line's choices, as a menu */
     void programMenu(juce::Rectangle<int> screen);
     void writeDialog();
+    void importDialog();                         /* a Rev2 .syx file: its programs kept as the user's */
+    std::unique_ptr<juce::FileChooser> chooser;
     juce::String valueText(int l, int p, int v) const;
 
     int lfoSel = 0, modSlot = 0, track = 0, step = 0;

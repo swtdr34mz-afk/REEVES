@@ -74,11 +74,16 @@ public:
     rv::SeqData seqCopy(int layer) const;
     std::array<int8_t, 16> chordCopy(int layer) const;
 
-    /* the user's programs (WRITE): files in Documents/REEVES/Programs, after the factory ones */
+    /* the user's programs (WRITE): files in Documents/REEVES/Programs, after the factory ones; those in a folder
+     * there (an imported bank) keep its name as their group */
     std::vector<rv::Program> userPrograms;
+    std::vector<juce::String> userGroup;
     static juce::File programFolder();
     void loadUserPrograms();
     int writeProgram(const juce::String &name);
+    /* a Rev2's SysEx file (.syx): each program in it kept as one of the user's, in a folder named after the file;
+     * the number of programs (0: none in it) */
+    int importRev2(const juce::File &syx);
     rv::Program currentProgram() const;         /* the sound as it is now, whole */
     bool compare = false;                       /* COMPARE: the stored program heard, the edit kept aside */
     void setCompare(bool on);

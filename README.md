@@ -12,6 +12,12 @@ Unofficial: not made, endorsed or supported by Sequential.
 [Actions](https://github.com/swtdr34mz-afk/REEVES/actions) → the newest green run → **Artifacts** at the bottom:
 `REEVES-Windows`, `REEVES-macOS` or `REEVES-MPC` (a GitHub sign-in is needed for artifacts).
 
+## Rev2-Sounds laden (kurz auf Deutsch)
+
+Auf das Display klicken → ganz unten **Import Rev2 SysEx file (.syx)...** → die `.syx`-Datei wählen. Alle Programme
+darin landen unter **YOUR PROGRAMS**, in einem eigenen Untermenü mit dem Namen der Datei (je 128 pro Untermenü).
+Gespeichert werden sie in `Dokumente/REEVES/Programs/<Dateiname>/`. Zum Entfernen den Ordner löschen.
+
 ## Installieren (kurz auf Deutsch)
 
 **Windows (Cubase):**
@@ -51,6 +57,10 @@ Die Plugins laufen auf Apple Silicon und Intel-Macs (eine Datei für beide).
 - **UNISON** of 1 to 16 voices with DETUNE and KEY MODE, and CHORD memory.
 - **HOST SYNC**: the clocks, synced LFOs and delays follow the DAW's tempo and position.
 - 32 factory programs; WRITE keeps your own (Documents/REEVES/Programs).
+- **Rev2 SysEx import**: click the display, *Import Rev2 SysEx file (.syx)...*: every program in a Prophet Rev2
+  program dump (your own Rev2's, or a bank you own) becomes one of your programs, both layers, A/B mode, split point
+  and sequences included, in a folder named after the file (a menu of its own under YOUR PROGRAMS). REEVES itself
+  ships none of these sounds.
 - **QUALITY** (GLOBAL page): HIGH runs the oscillators and filters at 4x the sample rate, ECO at 2x (less CPU).
 
 ## The panel
