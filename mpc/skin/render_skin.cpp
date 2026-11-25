@@ -4,12 +4,12 @@
  * buttons, the LEDs, the section frames, the legends, the maker's tag), on the MPC's six pages (its function keys;
  * a second press: the same page for layer B):
  *
- *   OSC      OSCILLATORS / GLIDE, KEYS, UNISON
- *   FILTER   LOW-PASS FILTER / AMPLIFIER, VOICE
- *   MOD      the eight MODULATION slots (source, destination, amount)
- *   LFO      LFO 1, LFO 2 / LFO 3, LFO 4
- *   ENV3/FX  AUXILIARY ENVELOPE / EFFECT
- *   PLAY     ARP, CLOCK, SEQUENCER / LAYERS, VOICES, QUALITY, HOLD, BEND, VOLUME
+ *   OSC      OSCILLATORS
+ *   FILTER   LOW-PASS FILTER
+ *   ENV      AMPLIFIER, AUXILIARY ENVELOPE
+ *   LFO      LFO 1-4
+ *   MOD      the eight MODULATION slots on a display; the knobs edit the slot tapped
+ *   PLAY     EFFECT, ARP, GLIDE / UNISON / HOLD / PROGRAM, MISC PARAMS
  *
  * Each page is drawn at the MPC's 1280 x 628 and cut up: its background (the face, the frames, the legends), and
  * every control at every value it can take (a knob's film strip, a button's look for each value with the value a
@@ -131,7 +131,7 @@ struct Builder {
  *   ENV     AMPLIFIER | AUXILIARY ENVELOPE
  *   LFO     the four LFOs, each as the Rev2's LFO section
  *   MOD     the eight MODULATION slots
- *   PLAY    EFFECT | ARP + CLOCK | GLIDE, UNISON, HOLD; SEQUENCER | PROGRAM | MISC PARAMS */
+ *   PLAY    EFFECT | ARP + CLOCK | GLIDE, UNISON, HOLD; PROGRAM | MISC PARAMS */
 constexpr float TOP0 = 18, TOP1 = 290, BOT0 = 306, BOT1 = 576;
 struct It {
     char kind;                           /* 'k' knob, 'b' button, 'l' an LED list (its id's choices), ' ' a gap */
@@ -276,16 +276,15 @@ std::vector<Page> pages()
                 {{{'k', "o1_glide", "RATE OSC 1"}, {'k', "o2_glide", "RATE OSC 2"}, {'b', "glide", "GLIDE"}},
                  {{'b', "unison", "UNISON"}, {'b', "hold", "HOLD"}, {'k', "pgm_vol", "VOLUME"}}},
                 58);
-        gridSec(b, L, 330, BOT0, BOT1, "SEQUENCER",
-                {{{'b', "seq_on", "PLAY"}, {'k', "seq_type", "TYPE"}, {'k', "seq_mode", "GATED MODE"}}}, 74);
-        gridSec(b, 342, 800, BOT0, BOT1, "PROGRAM",
+        /* (the bottom band: PROGRAM and MISC PARAMS across the whole width, room for a finger) */
+        gridSec(b, L, 614, BOT0, BOT1, "PROGRAM",
                 {{{'k', "layer_mode", "STACK / SPLIT"}, {'k', "split_point", "SPLIT POINT"}, {'k', "voices", "VOICES"},
                   {'k', "quality", "QUALITY"}}},
-                74);
-        gridSec(b, 812, R, BOT0, BOT1, "MISC PARAMS",
+                84);
+        gridSec(b, 626, R, BOT0, BOT1, "MISC PARAMS",
                 {{{'k', "glide_mode", "GLIDE MODE"}, {'k', "uni_mode", "UNI VOICES"}, {'k', "uni_detune", "DETUNE"},
                   {'k', "key_mode", "KEY MODE"}, {'k', "pb_range", "BEND"}}},
-                66);
+                84);
         ps.push_back(b.pg);
     }
     return ps;

@@ -74,7 +74,7 @@ PAGES = [
              (["mod5_dst", "mod6_dst", "mod7_dst", "mod8_dst"], False)]),
     ("PLAY", [(["fx_type", "fx_mix", "fx_p1", "fx_p2"], False),
               (["arp_mode", "divide", "arp_range", "arp_repeat"], False),
-              (["o1_glide", "o2_glide", "pgm_vol", "seq_mode"], False),
+              (["o1_glide", "o2_glide", "pgm_vol", "voices"], False),
               (["uni_mode", "uni_detune", "key_mode", "split_point"], False)]),
 ]
 MODH = "Local/8/modslot"                 # the slot MOD's knobs edit (the screen's own value)

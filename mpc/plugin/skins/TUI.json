@@ -8757,7 +8757,7 @@
           }
         },
         {
-          "key": "play knob 19 seq_type",
+          "key": "play knob 18 layer_mode",
           "value": {
             "version": 2,
             "actions": [
@@ -8808,211 +8808,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_019_seq_type_knob.png",
-                    "numFrames": 2,
-                    "invert": false,
-                    "dragOrientation": "Vertical",
-                    "handleName": "Data"
-                  }
-                },
-                "handle remapping": {
-                  "version": 1,
-                  "map": []
-                },
-                "bounds": {
-                  "version": 1,
-                  "acceptsHWFocus": "No",
-                  "showWhenDataModelInvalid": "Show",
-                  "whenVisible": "Always",
-                  "boundsType": "Absolute",
-                  "bounds": "7 0 80 80"
-                }
-              },
-              {
-                "version": 2,
-                "componentData": {
-                  "version": 1,
-                  "name": "focus",
-                  "type": "Focus",
-                  "data": {
-                    "version": 1,
-                    "backgroundColour": "19ffffff",
-                    "outlineColour": "ffe81f40",
-                    "backgroundInset": 1.0,
-                    "outlineThickness": 1.0
-                  }
-                },
-                "handle remapping": {
-                  "version": 1,
-                  "map": []
-                },
-                "bounds": {
-                  "version": 1,
-                  "acceptsHWFocus": "No",
-                  "showWhenDataModelInvalid": "Show",
-                  "whenVisible": "WhenFocussed",
-                  "boundsType": "Absolute",
-                  "bounds": "0 0 93 121"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "key": "play knob 20 seq_mode",
-          "value": {
-            "version": 2,
-            "actions": [
-              {
-                "version": 1,
-                "onAction": "Mouse Down",
-                "handler": "Q-Link",
-                "handleName": "Data",
-                "additionalData": ""
-              },
-              {
-                "version": 1,
-                "onAction": "Double Click",
-                "handler": "Show Overlay",
-                "handleName": "Data",
-                "additionalData": "menu overlay"
-              },
-              {
-                "version": 1,
-                "onAction": "Enter Pressed",
-                "handler": "Show Overlay",
-                "handleName": "Data",
-                "additionalData": "menu overlay"
-              }
-            ],
-            "backgroundData": {
-              "version": 1,
-              "focussed": {
-                "version": 1,
-                "colour": "0",
-                "image": ""
-              },
-              "unfocussed": {
-                "version": 1,
-                "colour": "0",
-                "image": ""
-              }
-            },
-            "ignoreMousePresses": false,
-            "disableCoarseDataWheel": false,
-            "componentsData": [
-              {
-                "version": 2,
-                "componentData": {
-                  "version": 1,
-                  "name": "knob",
-                  "type": "Knob",
-                  "data": {
-                    "version": 3,
-                    "knobType": "FilmStrip",
-                    "filmStrip": "play_020_seq_mode_knob.png",
-                    "numFrames": 5,
-                    "invert": false,
-                    "dragOrientation": "Vertical",
-                    "handleName": "Data"
-                  }
-                },
-                "handle remapping": {
-                  "version": 1,
-                  "map": []
-                },
-                "bounds": {
-                  "version": 1,
-                  "acceptsHWFocus": "No",
-                  "showWhenDataModelInvalid": "Show",
-                  "whenVisible": "Always",
-                  "boundsType": "Absolute",
-                  "bounds": "6 0 80 80"
-                }
-              },
-              {
-                "version": 2,
-                "componentData": {
-                  "version": 1,
-                  "name": "focus",
-                  "type": "Focus",
-                  "data": {
-                    "version": 1,
-                    "backgroundColour": "19ffffff",
-                    "outlineColour": "ffe81f40",
-                    "backgroundInset": 1.0,
-                    "outlineThickness": 1.0
-                  }
-                },
-                "handle remapping": {
-                  "version": 1,
-                  "map": []
-                },
-                "bounds": {
-                  "version": 1,
-                  "acceptsHWFocus": "No",
-                  "showWhenDataModelInvalid": "Show",
-                  "whenVisible": "WhenFocussed",
-                  "boundsType": "Absolute",
-                  "bounds": "0 0 93 121"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "key": "play knob 21 layer_mode",
-          "value": {
-            "version": 2,
-            "actions": [
-              {
-                "version": 1,
-                "onAction": "Mouse Down",
-                "handler": "Q-Link",
-                "handleName": "Data",
-                "additionalData": ""
-              },
-              {
-                "version": 1,
-                "onAction": "Double Click",
-                "handler": "Show Overlay",
-                "handleName": "Data",
-                "additionalData": "menu overlay"
-              },
-              {
-                "version": 1,
-                "onAction": "Enter Pressed",
-                "handler": "Show Overlay",
-                "handleName": "Data",
-                "additionalData": "menu overlay"
-              }
-            ],
-            "backgroundData": {
-              "version": 1,
-              "focussed": {
-                "version": 1,
-                "colour": "0",
-                "image": ""
-              },
-              "unfocussed": {
-                "version": 1,
-                "colour": "0",
-                "image": ""
-              }
-            },
-            "ignoreMousePresses": false,
-            "disableCoarseDataWheel": false,
-            "componentsData": [
-              {
-                "version": 2,
-                "componentData": {
-                  "version": 1,
-                  "name": "knob",
-                  "type": "Knob",
-                  "data": {
-                    "version": 3,
-                    "knobType": "FilmStrip",
-                    "filmStrip": "play_021_layer_mode_knob.png",
+                    "filmStrip": "play_018_layer_mode_knob.png",
                     "numFrames": 3,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9029,7 +8825,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "12 0 80 80"
+                  "bounds": "24 0 90 90"
                 }
               },
               {
@@ -9056,14 +8852,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 104 121"
+                  "bounds": "0 0 139 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 22 split_point",
+          "key": "play knob 19 split_point",
           "value": {
             "version": 2,
             "actions": [
@@ -9114,8 +8910,8 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_022_split_point_knob.png",
-                    "numFrames": 122,
+                    "filmStrip": "play_019_split_point_knob.png",
+                    "numFrames": 108,
                     "invert": false,
                     "dragOrientation": "Vertical",
                     "handleName": "Data"
@@ -9131,7 +8927,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "11 0 80 80"
+                  "bounds": "25 0 90 90"
                 }
               },
               {
@@ -9158,14 +8954,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 104 121"
+                  "bounds": "0 0 139 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 23 voices",
+          "key": "play knob 20 voices",
           "value": {
             "version": 2,
             "actions": [
@@ -9216,7 +9012,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_023_voices_knob.png",
+                    "filmStrip": "play_020_voices_knob.png",
                     "numFrames": 2,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9233,7 +9029,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "12 0 80 80"
+                  "bounds": "24 0 90 90"
                 }
               },
               {
@@ -9260,14 +9056,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 104 121"
+                  "bounds": "0 0 139 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 24 quality",
+          "key": "play knob 21 quality",
           "value": {
             "version": 2,
             "actions": [
@@ -9318,7 +9114,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_024_quality_knob.png",
+                    "filmStrip": "play_021_quality_knob.png",
                     "numFrames": 2,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9335,7 +9131,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "12 0 80 80"
+                  "bounds": "25 0 90 90"
                 }
               },
               {
@@ -9362,14 +9158,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 104 121"
+                  "bounds": "0 0 139 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 25 glide_mode",
+          "key": "play knob 22 glide_mode",
           "value": {
             "version": 2,
             "actions": [
@@ -9420,7 +9216,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_025_glide_mode_knob.png",
+                    "filmStrip": "play_022_glide_mode_knob.png",
                     "numFrames": 4,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9437,7 +9233,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "4 0 72 72"
+                  "bounds": "14 0 90 90"
                 }
               },
               {
@@ -9464,14 +9260,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 80 113"
+                  "bounds": "0 0 118 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 26 uni_mode",
+          "key": "play knob 23 uni_mode",
           "value": {
             "version": 2,
             "actions": [
@@ -9522,7 +9318,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_026_uni_mode_knob.png",
+                    "filmStrip": "play_023_uni_mode_knob.png",
                     "numFrames": 17,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9539,7 +9335,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "5 0 72 72"
+                  "bounds": "13 0 90 90"
                 }
               },
               {
@@ -9566,14 +9362,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 80 113"
+                  "bounds": "0 0 118 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 27 uni_detune",
+          "key": "play knob 24 uni_detune",
           "value": {
             "version": 2,
             "actions": [
@@ -9624,7 +9420,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_027_uni_detune_knob.png",
+                    "filmStrip": "play_024_uni_detune_knob.png",
                     "numFrames": 17,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9641,7 +9437,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "4 0 72 72"
+                  "bounds": "14 0 90 90"
                 }
               },
               {
@@ -9668,14 +9464,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 80 113"
+                  "bounds": "0 0 118 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 28 key_mode",
+          "key": "play knob 25 key_mode",
           "value": {
             "version": 2,
             "actions": [
@@ -9726,7 +9522,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_028_key_mode_knob.png",
+                    "filmStrip": "play_025_key_mode_knob.png",
                     "numFrames": 6,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9743,7 +9539,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "4 0 72 72"
+                  "bounds": "14 0 90 90"
                 }
               },
               {
@@ -9770,14 +9566,14 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 80 113"
+                  "bounds": "0 0 118 131"
                 }
               }
             ]
           }
         },
         {
-          "key": "play knob 29 pb_range",
+          "key": "play knob 26 pb_range",
           "value": {
             "version": 2,
             "actions": [
@@ -9828,7 +9624,7 @@
                   "data": {
                     "version": 3,
                     "knobType": "FilmStrip",
-                    "filmStrip": "play_029_pb_range_knob.png",
+                    "filmStrip": "play_026_pb_range_knob.png",
                     "numFrames": 13,
                     "invert": false,
                     "dragOrientation": "Vertical",
@@ -9845,7 +9641,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "Always",
                   "boundsType": "Absolute",
-                  "bounds": "4 0 72 72"
+                  "bounds": "14 0 90 90"
                 }
               },
               {
@@ -9872,7 +9668,7 @@
                   "showWhenDataModelInvalid": "Show",
                   "whenVisible": "WhenFocussed",
                   "boundsType": "Absolute",
-                  "bounds": "0 0 80 113"
+                  "bounds": "0 0 118 131"
                 }
               }
             ]
@@ -10066,18 +9862,6 @@
         "value": ["Off", "On"]
       },
       {
-        "key": "Parameter 123",
-        "value": ["Off", "On"]
-      },
-      {
-        "key": "Parameter 124",
-        "value": ["Gated", "Poly"]
-      },
-      {
-        "key": "Parameter 125",
-        "value": ["Normal", "No Reset", "No Gate", "No Gate/Reset", "Key Step"]
-      },
-      {
         "key": "Parameter 131",
         "value": ["Off", "On"]
       },
@@ -10268,18 +10052,6 @@
       {
         "key": "Parameter 258",
         "value": ["Off", "On"]
-      },
-      {
-        "key": "Parameter 259",
-        "value": ["Off", "On"]
-      },
-      {
-        "key": "Parameter 260",
-        "value": ["Gated", "Poly"]
-      },
-      {
-        "key": "Parameter 261",
-        "value": ["Normal", "No Reset", "No Gate", "No Gate/Reset", "Key Step"]
       },
       {
         "key": "Parameter 267",
@@ -27144,187 +26916,13 @@
               "version": 2,
               "componentData": {
                 "version": 1,
-                "name": "seq_on",
-                "type": "Button",
-                "data": {
-                  "version": 2,
-                  "onImage": "play_018_seq_on_button_0.png",
-                  "offImage": "play_018_seq_on_button_0.png",
-                  "buttonId": 1,
-                  "numButtonsInGroup": 2,
-                  "handleName": "Parameter 123",
-                  "gestureBehaviour": "Instant"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 2,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "42 405 58 34",
-                "additionalInvalidatingHandles": ["IndexedEnabling/0/2/Parameter 123"]
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_on",
-                "type": "Button",
-                "data": {
-                  "version": 2,
-                  "onImage": "play_018_seq_on_button_1.png",
-                  "offImage": "play_018_seq_on_button_1.png",
-                  "buttonId": 0,
-                  "numButtonsInGroup": 2,
-                  "handleName": "Parameter 123",
-                  "gestureBehaviour": "Instant"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 2,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "42 405 58 34",
-                "additionalInvalidatingHandles": ["IndexedEnabling/1/2/Parameter 123"]
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_type value",
-                "type": "Image",
-                "data": {
-                  "version": 2,
-                  "imageType": "FilmStrip",
-                  "colour": "0",
-                  "image": "play_019_seq_type_value.png",
-                  "numFrames": 2,
-                  "handleName": "Parameter 124"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Show",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "125 483 93 18"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_type",
-                "type": "play knob 19 seq_type",
-                "data": {
-                  "version": 1,
-                  "handleName": "Data"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": [
-                  {
-                    "key": "Data",
-                    "value": "Parameter 124"
-                  }
-                ]
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "Yes",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "125 382 93 121"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_mode value",
-                "type": "Image",
-                "data": {
-                  "version": 2,
-                  "imageType": "FilmStrip",
-                  "colour": "0",
-                  "image": "play_020_seq_mode_value.png",
-                  "numFrames": 5,
-                  "handleName": "Parameter 125"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Show",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "227 483 93 18"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_mode",
-                "type": "play knob 20 seq_mode",
-                "data": {
-                  "version": 1,
-                  "handleName": "Data"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": [
-                  {
-                    "key": "Data",
-                    "value": "Parameter 125"
-                  }
-                ]
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "Yes",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "227 382 93 121"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
                 "name": "layer_mode value",
                 "type": "Image",
                 "data": {
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_021_layer_mode_value.png",
+                  "image": "play_018_layer_mode_value.png",
                   "numFrames": 3,
                   "handleName": "Parameter 273"
                 }
@@ -27339,7 +26937,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "352 483 104 18"
+                "bounds": "24 488 139 18"
               }
             },
             {
@@ -27347,7 +26945,7 @@
               "componentData": {
                 "version": 1,
                 "name": "layer_mode",
-                "type": "play knob 21 layer_mode",
+                "type": "play knob 18 layer_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27368,7 +26966,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "352 382 104 121"
+                "bounds": "24 377 139 131"
               }
             },
             {
@@ -27381,7 +26979,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_022_split_point_value.png",
+                  "image": "play_019_split_point_value.png",
                   "numFrames": 128,
                   "handleName": "Parameter 274"
                 }
@@ -27396,7 +26994,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "464 483 104 18"
+                "bounds": "171 488 139 18"
               }
             },
             {
@@ -27404,7 +27002,7 @@
               "componentData": {
                 "version": 1,
                 "name": "split_point",
-                "type": "play knob 22 split_point",
+                "type": "play knob 19 split_point",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27425,7 +27023,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "464 382 104 121"
+                "bounds": "171 377 139 131"
               }
             },
             {
@@ -27438,7 +27036,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_023_voices_value.png",
+                  "image": "play_020_voices_value.png",
                   "numFrames": 2,
                   "handleName": "Parameter 275"
                 }
@@ -27453,7 +27051,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "575 483 104 18"
+                "bounds": "318 488 139 18"
               }
             },
             {
@@ -27461,7 +27059,7 @@
               "componentData": {
                 "version": 1,
                 "name": "voices",
-                "type": "play knob 23 voices",
+                "type": "play knob 20 voices",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27482,7 +27080,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "575 382 104 121"
+                "bounds": "318 377 139 131"
               }
             },
             {
@@ -27495,7 +27093,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_024_quality_value.png",
+                  "image": "play_021_quality_value.png",
                   "numFrames": 2,
                   "handleName": "Parameter 276"
                 }
@@ -27510,7 +27108,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "686 483 104 18"
+                "bounds": "465 488 139 18"
               }
             },
             {
@@ -27518,7 +27116,7 @@
               "componentData": {
                 "version": 1,
                 "name": "quality",
-                "type": "play knob 24 quality",
+                "type": "play knob 21 quality",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27539,7 +27137,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "686 382 104 121"
+                "bounds": "465 377 139 131"
               }
             },
             {
@@ -27552,7 +27150,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_025_glide_mode_value.png",
+                  "image": "play_022_glide_mode_value.png",
                   "numFrames": 4,
                   "handleName": "Parameter 21"
                 }
@@ -27567,7 +27165,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "822 479 80 18"
+                "bounds": "636 488 118 18"
               }
             },
             {
@@ -27575,7 +27173,7 @@
               "componentData": {
                 "version": 1,
                 "name": "glide_mode",
-                "type": "play knob 25 glide_mode",
+                "type": "play knob 22 glide_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27596,7 +27194,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "822 386 80 113"
+                "bounds": "636 377 118 131"
               }
             },
             {
@@ -27609,7 +27207,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_026_uni_mode_value.png",
+                  "image": "play_023_uni_mode_value.png",
                   "numFrames": 17,
                   "handleName": "Parameter 132"
                 }
@@ -27624,7 +27222,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "910 479 80 18"
+                "bounds": "762 488 118 18"
               }
             },
             {
@@ -27632,7 +27230,7 @@
               "componentData": {
                 "version": 1,
                 "name": "uni_mode",
-                "type": "play knob 26 uni_mode",
+                "type": "play knob 23 uni_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27653,7 +27251,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "910 386 80 113"
+                "bounds": "762 377 118 131"
               }
             },
             {
@@ -27666,7 +27264,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_027_uni_detune_value.png",
+                  "image": "play_024_uni_detune_value.png",
                   "numFrames": 17,
                   "handleName": "Parameter 133"
                 }
@@ -27681,7 +27279,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "999 479 80 18"
+                "bounds": "887 488 118 18"
               }
             },
             {
@@ -27689,7 +27287,7 @@
               "componentData": {
                 "version": 1,
                 "name": "uni_detune",
-                "type": "play knob 27 uni_detune",
+                "type": "play knob 24 uni_detune",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27710,7 +27308,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "999 386 80 113"
+                "bounds": "887 377 118 131"
               }
             },
             {
@@ -27723,7 +27321,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_028_key_mode_value.png",
+                  "image": "play_025_key_mode_value.png",
                   "numFrames": 6,
                   "handleName": "Parameter 134"
                 }
@@ -27738,7 +27336,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1087 479 80 18"
+                "bounds": "1013 488 118 18"
               }
             },
             {
@@ -27746,7 +27344,7 @@
               "componentData": {
                 "version": 1,
                 "name": "key_mode",
-                "type": "play knob 28 key_mode",
+                "type": "play knob 25 key_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27767,7 +27365,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1087 386 80 113"
+                "bounds": "1013 377 118 131"
               }
             },
             {
@@ -27780,7 +27378,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_029_pb_range_value.png",
+                  "image": "play_026_pb_range_value.png",
                   "numFrames": 13,
                   "handleName": "Parameter 135"
                 }
@@ -27795,7 +27393,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1176 479 80 18"
+                "bounds": "1138 488 118 18"
               }
             },
             {
@@ -27803,7 +27401,7 @@
               "componentData": {
                 "version": 1,
                 "name": "pb_range",
-                "type": "play knob 29 pb_range",
+                "type": "play knob 26 pb_range",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -27824,7 +27422,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1176 386 80 113"
+                "bounds": "1138 377 118 131"
               }
             }
           ]
@@ -28958,187 +28556,13 @@
               "version": 2,
               "componentData": {
                 "version": 1,
-                "name": "seq_on",
-                "type": "Button",
-                "data": {
-                  "version": 2,
-                  "onImage": "play_018_seq_on_button_0.png",
-                  "offImage": "play_018_seq_on_button_0.png",
-                  "buttonId": 1,
-                  "numButtonsInGroup": 2,
-                  "handleName": "Parameter 259",
-                  "gestureBehaviour": "Instant"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 2,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "42 405 58 34",
-                "additionalInvalidatingHandles": ["IndexedEnabling/0/2/Parameter 259"]
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_on",
-                "type": "Button",
-                "data": {
-                  "version": 2,
-                  "onImage": "play_018_seq_on_button_1.png",
-                  "offImage": "play_018_seq_on_button_1.png",
-                  "buttonId": 0,
-                  "numButtonsInGroup": 2,
-                  "handleName": "Parameter 259",
-                  "gestureBehaviour": "Instant"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 2,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "42 405 58 34",
-                "additionalInvalidatingHandles": ["IndexedEnabling/1/2/Parameter 259"]
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_type value",
-                "type": "Image",
-                "data": {
-                  "version": 2,
-                  "imageType": "FilmStrip",
-                  "colour": "0",
-                  "image": "play_019_seq_type_value.png",
-                  "numFrames": 2,
-                  "handleName": "Parameter 260"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Show",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "125 483 93 18"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_type",
-                "type": "play knob 19 seq_type",
-                "data": {
-                  "version": 1,
-                  "handleName": "Data"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": [
-                  {
-                    "key": "Data",
-                    "value": "Parameter 260"
-                  }
-                ]
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "Yes",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "125 382 93 121"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_mode value",
-                "type": "Image",
-                "data": {
-                  "version": 2,
-                  "imageType": "FilmStrip",
-                  "colour": "0",
-                  "image": "play_020_seq_mode_value.png",
-                  "numFrames": 5,
-                  "handleName": "Parameter 261"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": []
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "No",
-                "showWhenDataModelInvalid": "Show",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "227 483 93 18"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
-                "name": "seq_mode",
-                "type": "play knob 20 seq_mode",
-                "data": {
-                  "version": 1,
-                  "handleName": "Data"
-                }
-              },
-              "handle remapping": {
-                "version": 1,
-                "map": [
-                  {
-                    "key": "Data",
-                    "value": "Parameter 261"
-                  }
-                ]
-              },
-              "bounds": {
-                "version": 1,
-                "acceptsHWFocus": "Yes",
-                "showWhenDataModelInvalid": "Hide",
-                "whenVisible": "Always",
-                "boundsType": "Absolute",
-                "bounds": "227 382 93 121"
-              }
-            },
-            {
-              "version": 2,
-              "componentData": {
-                "version": 1,
                 "name": "layer_mode value",
                 "type": "Image",
                 "data": {
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_021_layer_mode_value.png",
+                  "image": "play_018_layer_mode_value.png",
                   "numFrames": 3,
                   "handleName": "Parameter 273"
                 }
@@ -29153,7 +28577,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "352 483 104 18"
+                "bounds": "24 488 139 18"
               }
             },
             {
@@ -29161,7 +28585,7 @@
               "componentData": {
                 "version": 1,
                 "name": "layer_mode",
-                "type": "play knob 21 layer_mode",
+                "type": "play knob 18 layer_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29182,7 +28606,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "352 382 104 121"
+                "bounds": "24 377 139 131"
               }
             },
             {
@@ -29195,7 +28619,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_022_split_point_value.png",
+                  "image": "play_019_split_point_value.png",
                   "numFrames": 128,
                   "handleName": "Parameter 274"
                 }
@@ -29210,7 +28634,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "464 483 104 18"
+                "bounds": "171 488 139 18"
               }
             },
             {
@@ -29218,7 +28642,7 @@
               "componentData": {
                 "version": 1,
                 "name": "split_point",
-                "type": "play knob 22 split_point",
+                "type": "play knob 19 split_point",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29239,7 +28663,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "464 382 104 121"
+                "bounds": "171 377 139 131"
               }
             },
             {
@@ -29252,7 +28676,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_023_voices_value.png",
+                  "image": "play_020_voices_value.png",
                   "numFrames": 2,
                   "handleName": "Parameter 275"
                 }
@@ -29267,7 +28691,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "575 483 104 18"
+                "bounds": "318 488 139 18"
               }
             },
             {
@@ -29275,7 +28699,7 @@
               "componentData": {
                 "version": 1,
                 "name": "voices",
-                "type": "play knob 23 voices",
+                "type": "play knob 20 voices",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29296,7 +28720,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "575 382 104 121"
+                "bounds": "318 377 139 131"
               }
             },
             {
@@ -29309,7 +28733,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_024_quality_value.png",
+                  "image": "play_021_quality_value.png",
                   "numFrames": 2,
                   "handleName": "Parameter 276"
                 }
@@ -29324,7 +28748,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "686 483 104 18"
+                "bounds": "465 488 139 18"
               }
             },
             {
@@ -29332,7 +28756,7 @@
               "componentData": {
                 "version": 1,
                 "name": "quality",
-                "type": "play knob 24 quality",
+                "type": "play knob 21 quality",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29353,7 +28777,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "686 382 104 121"
+                "bounds": "465 377 139 131"
               }
             },
             {
@@ -29366,7 +28790,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_025_glide_mode_value.png",
+                  "image": "play_022_glide_mode_value.png",
                   "numFrames": 4,
                   "handleName": "Parameter 157"
                 }
@@ -29381,7 +28805,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "822 479 80 18"
+                "bounds": "636 488 118 18"
               }
             },
             {
@@ -29389,7 +28813,7 @@
               "componentData": {
                 "version": 1,
                 "name": "glide_mode",
-                "type": "play knob 25 glide_mode",
+                "type": "play knob 22 glide_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29410,7 +28834,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "822 386 80 113"
+                "bounds": "636 377 118 131"
               }
             },
             {
@@ -29423,7 +28847,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_026_uni_mode_value.png",
+                  "image": "play_023_uni_mode_value.png",
                   "numFrames": 17,
                   "handleName": "Parameter 268"
                 }
@@ -29438,7 +28862,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "910 479 80 18"
+                "bounds": "762 488 118 18"
               }
             },
             {
@@ -29446,7 +28870,7 @@
               "componentData": {
                 "version": 1,
                 "name": "uni_mode",
-                "type": "play knob 26 uni_mode",
+                "type": "play knob 23 uni_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29467,7 +28891,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "910 386 80 113"
+                "bounds": "762 377 118 131"
               }
             },
             {
@@ -29480,7 +28904,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_027_uni_detune_value.png",
+                  "image": "play_024_uni_detune_value.png",
                   "numFrames": 17,
                   "handleName": "Parameter 269"
                 }
@@ -29495,7 +28919,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "999 479 80 18"
+                "bounds": "887 488 118 18"
               }
             },
             {
@@ -29503,7 +28927,7 @@
               "componentData": {
                 "version": 1,
                 "name": "uni_detune",
-                "type": "play knob 27 uni_detune",
+                "type": "play knob 24 uni_detune",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29524,7 +28948,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "999 386 80 113"
+                "bounds": "887 377 118 131"
               }
             },
             {
@@ -29537,7 +28961,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_028_key_mode_value.png",
+                  "image": "play_025_key_mode_value.png",
                   "numFrames": 6,
                   "handleName": "Parameter 270"
                 }
@@ -29552,7 +28976,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1087 479 80 18"
+                "bounds": "1013 488 118 18"
               }
             },
             {
@@ -29560,7 +28984,7 @@
               "componentData": {
                 "version": 1,
                 "name": "key_mode",
-                "type": "play knob 28 key_mode",
+                "type": "play knob 25 key_mode",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29581,7 +29005,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1087 386 80 113"
+                "bounds": "1013 377 118 131"
               }
             },
             {
@@ -29594,7 +29018,7 @@
                   "version": 2,
                   "imageType": "FilmStrip",
                   "colour": "0",
-                  "image": "play_029_pb_range_value.png",
+                  "image": "play_026_pb_range_value.png",
                   "numFrames": 13,
                   "handleName": "Parameter 271"
                 }
@@ -29609,7 +29033,7 @@
                 "showWhenDataModelInvalid": "Show",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1176 479 80 18"
+                "bounds": "1138 488 118 18"
               }
             },
             {
@@ -29617,7 +29041,7 @@
               "componentData": {
                 "version": 1,
                 "name": "pb_range",
-                "type": "play knob 29 pb_range",
+                "type": "play knob 26 pb_range",
                 "data": {
                   "version": 1,
                   "handleName": "Data"
@@ -29638,7 +29062,7 @@
                 "showWhenDataModelInvalid": "Hide",
                 "whenVisible": "Always",
                 "boundsType": "Absolute",
-                "bounds": "1176 386 80 113"
+                "bounds": "1138 377 118 131"
               }
             }
           ]
