@@ -172,6 +172,15 @@ int main()
         chord(e, false);
         run(e, 44100);
         CHECK(e.voicesSounding() == 0, "arp: %d voices after", e.voicesSounding());
+        /* the arp with UNISON: each note a stack */
+        p.layer[0][L_UNISON] = 1;
+        p.layer[0][L_UNI_MODE] = 4;
+        e.setProgram(p);
+        chord(e, true);
+        Stats u = run(e, 44100);
+        CHECK(!u.nan && u.rms > 0.005f && u.peak < 4.0f, "arp + unison: rms %.4f peak %.2f", u.rms, u.peak);
+        chord(e, false);
+        run(e, 44100);
     }
     {
         Engine e;

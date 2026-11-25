@@ -248,8 +248,11 @@ private:
                 fbS[0] = softT(a * fb);
                 fbS[1] = softT(b * fb);
                 if (tz) {                                       /* through zero: against the dry, slightly late */
-                    a = a - rd(md[0], mdN, mdW, base + sw * 0.5f);
-                    b = b - rd(md[1], mdN, mdW, base + sw * 0.5f);
+                    a = 0.6f * (a - rd(md[0], mdN, mdW, base + sw * 0.5f));
+                    b = 0.6f * (b - rd(md[1], mdN, mdW, base + sw * 0.5f));
+                } else {
+                    a *= 0.8f;
+                    b *= 0.8f;
                 }
                 yl = a;
                 yr = b;
@@ -348,7 +351,7 @@ private:
             float g = 1.0f + std::pow(sP1 / 255.0f, 1.5f) * 60.0f;
             float fc = 800.0f * std::exp2(sP2 / 127.0f * 4.3f);
             float k = 1.0f - std::exp(-2.0f * PI * fc * isr);
-            float lvl = 1.0f / (1.0f + 0.15f * std::sqrt(g));
+            float lvl = 1.0f / (1.0f + 0.35f * std::sqrt(g));
             for (int c = 0; c < 2; c++) {
                 float x = softT((c ? x1 : x0) * g);
                 dsLp[c] += (x - dsLp[c]) * k;

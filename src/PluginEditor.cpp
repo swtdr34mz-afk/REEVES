@@ -787,18 +787,19 @@ void Panel::entryMenu(juce::Rectangle<int> screen)
         return;
     }
     int cur = e.get();
-    bool many = e.hi - e.lo > 40;
-    juce::PopupMenu sub;
-    for (int v = e.lo; v <= e.hi; v++) {
-        juce::String t = e.text ? e.text(v) : juce::String(v);
-        if (many && (v - e.lo) % 32 == 0 && v > e.lo) {
-            m.addSubMenu(e.text ? e.text(v - 32) + " ..." : juce::String(v - 32) + " ...", sub);
-            sub = juce::PopupMenu();
+    if (e.hi - e.lo > 64) {                     /* a long range: in groups of 32 */
+        for (int g0 = e.lo; g0 <= e.hi; g0 += 32) {
+            juce::PopupMenu sub;
+            int g1 = juce::jmin(e.hi, g0 + 31);
+            for (int v = g0; v <= g1; v++)
+                sub.addItem(v - e.lo + 1, e.text ? e.text(v) : juce::String(v), true, v == cur);
+            m.addSubMenu((e.text ? e.text(g0) : juce::String(g0)) + "  ..  " + (e.text ? e.text(g1) : juce::String(g1)), sub, true,
+                         nullptr, cur >= g0 && cur <= g1);
         }
-        (many && e.hi - e.lo > 80 ? sub : m).addItem(v - e.lo + 1, t, true, v == cur);
+    } else {
+        for (int v = e.lo; v <= e.hi; v++)
+            m.addItem(v - e.lo + 1, e.text ? e.text(v) : juce::String(v), true, v == cur);
     }
-    if (many && e.hi - e.lo > 80)
-        m.addSubMenu("...", sub);
     juce::Component::SafePointer<Panel> self(this);
     m.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(screen).withMinimumWidth(180), [self, e](int r) {
         if (self && r > 0)

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 swtdr34mz (REEVES) */
 /* A picture of the editor (a PNG), without a window: for checking the panel's drawing.
- *   ReevesShot out.png [scale] [program] [layer B: 0/1] */
+ *   ReevesShot out.png [scale] [program] [layer B: 0/1] [display page] [line] */
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -18,6 +18,9 @@ int main(int argc, char **argv)
     proc.uiScale = 1.0f;
     std::unique_ptr<juce::AudioProcessorEditor> ed(proc.createEditor());
     ed->setSize(ReevesPanel::W, ReevesPanel::H);
+    if (argc > 5)
+        if (auto *panel = dynamic_cast<ReevesPanel *>(ed->getChildComponent(0)))
+            panel->openPage((ReevesPanel::Page)std::atoi(argv[5]), argc > 6 ? std::atoi(argv[6]) : 0);
     for (auto *c : ed->getChildren())             /* (the live parts: their state, as the timer would) */
         for (auto *k : c->getChildren())
             if (auto *lv = dynamic_cast<ReevesPanel::Live *>(k))

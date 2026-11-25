@@ -246,13 +246,13 @@ Program make(int i)
         b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_SAW}, {L_O2_FINE, 12}, {L_CUTOFF, 84}, {L_RESO, 40},
                {L_FENV_AMT, 40}, {L_FDEC, 70}, {L_FSUS, 50}, {L_AREL, 46}, {L_UNISON, 1}, {L_UNI_MODE, 2},
                {L_UNI_DETUNE, 5}, {L_GLIDE, 1}, {L_O1_GLIDE, 46}, {L_O2_GLIDE, 46}, {L_FX_ON, 1},
-               {L_FX_TYPE, FX_DISTORTION}, {L_FX_MIX, 100}, {L_FX_P1, 120}, {L_FX_P2, 70}});
+               {L_FX_TYPE, FX_DISTORTION}, {L_FX_MIX, 100}, {L_FX_P1, 120}, {L_FX_P2, 70}, {L_PGM_VOL, 60}});
         b.lfo(0, 68, LS_TRI, 0, MD_OSC_FREQ).mod(0, MS_MODWHEEL, MD_LFO1_AMT, 16);
         return b;
     }
     case 17: {
         B b = pad("Flanged Sweep");
-        b.set({{L_FX_TYPE, FX_FLANGER1}, {L_FX_MIX, 110}, {L_FX_P1, 30}, {L_FX_P2, 100}, {L_CUTOFF, 92}});
+        b.set({{L_FX_TYPE, FX_FLANGER1}, {L_FX_MIX, 110}, {L_FX_P1, 30}, {L_FX_P2, 100}, {L_CUTOFF, 92}, {L_PGM_VOL, 80}});
         return b;
     }
     case 18: {
@@ -278,7 +278,8 @@ Program make(int i)
         B b("Wobble");
         b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_PULSE}, {L_O1_FREQ, 24}, {L_O2_FREQ, 24}, {L_O2_FINE, 8},
                {L_SUB, 80}, {L_CUTOFF, 44}, {L_RESO, 60}, {L_AREL, 30}, {L_UNISON, 1}, {L_UNI_MODE, 4},
-               {L_UNI_DETUNE, 3}, {L_FX_ON, 1}, {L_FX_TYPE, FX_DISTORTION}, {L_FX_MIX, 50}, {L_FX_P1, 70}, {L_FX_P2, 60}});
+               {L_UNI_DETUNE, 3}, {L_FX_ON, 1}, {L_FX_TYPE, FX_DISTORTION}, {L_FX_MIX, 50}, {L_FX_P1, 70}, {L_FX_P2, 60},
+               {L_PGM_VOL, 75}});
         b.lfo(1, 80, LS_TRI, 70, MD_CUTOFF, 1, 1);
         return b;
     }

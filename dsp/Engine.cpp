@@ -286,10 +286,21 @@ void Engine::layerKey(int l, int note, float vel, bool down)
 
 void Engine::playNote(int l, int key, int note, float vel)
 {
-    int i = findVoice(l);
-    if (i < 0)
-        return;
-    startVoice(V[i], l, key, note, vel, 0.0f, true);
+    /* the arp's and the sequencer's notes with UNISON on: each a stack of its own */
+    const int16_t *P = L_[l].P;
+    int n = 1;
+    float det = 0.0f;
+    if (P[L_UNISON] && key >= K_ARP) {
+        n = std::max(1, std::min<int>(P[L_UNI_MODE] >= 17 ? 1 : P[L_UNI_MODE], cap(l)));
+        det = (float)P[L_UNI_DETUNE] * 3.0f;
+        L_[l].uniN = n;
+    }
+    for (int j = 0; j < n; j++) {
+        int i = findVoice(l);
+        if (i < 0)
+            return;
+        startVoice(V[i], l, key, note, vel, n > 1 ? U_DET[j] * det : 0.0f, true);
+    }
 }
 
 void Engine::stopNote(int l, int key)
@@ -902,10 +913,7 @@ void Engine::polyStep(int l)
         }
     for (int k = 0; k < PSEQ_NOTES; k++)
         if (st[k] >= 2) {
-            int note = st[k] - 2;
-            int i = findVoice(l);
-            if (i >= 0)
-                startVoice(V[i], l, K_SEQ + k, note, s.vel[ly.pStep][k] / 127.0f, 0.0f, true);
+            playNote(l, K_SEQ + k, st[k] - 2, s.vel[ly.pStep][k] / 127.0f);
             ly.sounding[k] = st[k];
         }
 }
@@ -1208,7 +1216,7 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
     float aamt = clampf((float)P[L_AENV_AMT] + d[MD_AENV_AMT] + d[MD_ENV_AMT], 0.0f, 127.0f) / 127.0f * avs;
     float base = clampf((float)P[L_VCA_LEVEL] / 127.0f + d[MD_VCA] / 127.0f, 0.0f, 1.0f);
     float pgm = (float)P[L_PGM_VOL] / 100.0f * VOICE_GAIN;
-    if (v.key == K_UNI && ly.uniN > 1)
+    if ((v.key == K_UNI || (v.key >= K_ARP && P[L_UNISON])) && ly.uniN > 1)
         pgm *= 1.0f / std::sqrt((float)ly.uniN);   /* (a stack as loud as a fat note, not N notes) */
     /* the pan */
     float pan;
