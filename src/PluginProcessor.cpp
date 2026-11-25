@@ -279,9 +279,10 @@ void ReevesProcessor::prepareToPlay(double sampleRate, int)
 {
     uiMidi.reset(sampleRate);
     engine.prepare(sampleRate);
+    Program cur = currentProgram();             /* (it takes the lock itself: not inside it) */
     {
         juce::SpinLock::ScopedLockType lock(progLock);
-        pending = currentProgram();
+        pending = cur;
     }
     pendingSet.store(true);
     started = false;

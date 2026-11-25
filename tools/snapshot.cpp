@@ -16,6 +16,27 @@ int main(int argc, char **argv)
     if (argc > 4)
         proc.editLayer = std::atoi(argv[4]);
     proc.uiScale = 1.0f;
+    {
+        /* the processor as a host drives it: prepare, blocks with notes, its state out and back in */
+        proc.setPlayConfigDetails(0, 2, 48000.0, 512);
+        proc.prepareToPlay(48000.0, 512);
+        juce::AudioBuffer<float> buf(2, 512);
+        float peak = 0.0f;
+        for (int b = 0; b < 200; b++) {
+            juce::MidiBuffer m;
+            if (b == 2)
+                m.addEvent(juce::MidiMessage::noteOn(1, 60, (juce::uint8)100), 10);
+            if (b == 150)
+                m.addEvent(juce::MidiMessage::noteOff(1, 60), 0);
+            buf.clear();
+            proc.processBlock(buf, m);
+            peak = juce::jmax(peak, buf.getMagnitude(0, 512));
+        }
+        juce::MemoryBlock st;
+        proc.getStateInformation(st);
+        proc.setStateInformation(st.getData(), (int)st.getSize());
+        std::printf("processed: peak %.3f, state %d bytes\n", peak, (int)st.getSize());
+    }
     std::unique_ptr<juce::AudioProcessorEditor> ed(proc.createEditor());
     ed->setSize(ReevesPanel::W, ReevesPanel::H);
     if (argc > 5)
