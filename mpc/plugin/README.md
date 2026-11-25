@@ -32,7 +32,7 @@ welcher Layer gerade zu sehen ist).
 | **ENV** | AMPLIFIER und AUXILIARY ENVELOPE nebeneinander |
 | **LFO** | die vier LFOs, jeder wie die LFO-Sektion am Rev2 |
 | **MOD** | Display mit allen 8 Modulations-Slots; eine Slot-Nummer antippen, dann bearbeiten SOURCE, DESTINATION und AMOUNT rechts diesen Slot |
-| **PLAY** | Effekt, Arp, Glide/Unison/Hold; Sequencer, Program (Stack/Split, Splitpunkt, 8/16 Stimmen, Qualität), Misc Params |
+| **PLAY** | Effekt, Arp, Glide/Unison/Hold; Program (Stack/Split, Splitpunkt, 8/16 Stimmen, Qualität), Misc Params |
 
 Unter jedem Regler steht sein Wert. Ein Knopf wird mit dem Finger hoch und runter gezogen oder mit seinem Q-Link gedreht; zweimal tippen öffnet den
 großen Regler der MPC (bei einer Auswahl die Liste). Ein Taster schaltet um, eine LED-Liste wählt aus. Die Q-Links
