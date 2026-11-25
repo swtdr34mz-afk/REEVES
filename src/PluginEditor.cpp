@@ -760,7 +760,7 @@ void Panel::entryMenu(juce::Rectangle<int> screen)
 
 void Panel::programMenu(juce::Rectangle<int> screen)
 {
-    constexpr int IMPORT = 100000;
+    static constexpr int IMPORT = 100000;
     juce::PopupMenu m;
     m.addSectionHeader("FACTORY");
     for (int i = 0; i < NFACTORY; i++)
