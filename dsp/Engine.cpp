@@ -111,7 +111,11 @@ void Engine::prepare(double sampleRate)
     for (int l = 0; l < 2; l++) {
         L_[l].fx.prepare(sr);
         L_[l].P = prog.layer[l];
+        L_[l].dcL = L_[l].dcR = L_[l].dcxL = L_[l].dcxR = 0.0f;
     }
+    dcR = 1.0f - 2.0f * PI * 8.0f / sr;
+    for (float &c : ctl)
+        c = 0.0f;
     gpos = CH;
 }
 
@@ -439,7 +443,7 @@ void Engine::startVoice(Voice &v, int l, int key, int note, float vel, float det
     if (fresh) {
         for (float &d : v.dst)
             d = 0.0f;
-        v.lc = -1.0f;
+        v.smOk = false;
         v.e[0].v = v.e[1].v = v.e[2].v = 0.0f;
     }
 }
@@ -1035,8 +1039,9 @@ void Engine::modulate(Voice &v, Layer &ly, float *src)
         v.dst[i] = d[i];
 }
 
-void Engine::envChunk(Env &e, int ei, const Voice &v, const int16_t *P, float *tgt, float *k)
+void Engine::envChunk(Env &e, int ei, const Voice &v, const int16_t *P, float *tgt, float *k, bool *lin)
 {
+    *lin = false;
     static const int BASE[3] = {L_FDEL, L_ADEL, L_E3DEL};
     const int16_t *Q = P + BASE[ei];
     float dt = (float)CH / sr;
@@ -1057,22 +1062,23 @@ void Engine::envChunk(Env &e, int ei, const Voice &v, const int16_t *P, float *t
     case ES_ATT: {
         mt = v.dst[MD_FENV_ATT + ei] + v.dst[MD_ENV_ATT];
         float T = envSec(clampf((float)Q[1] + mt, 0.0f, 127.0f));
-        *tgt = 1.3f;
-        *k = 1.0f - std::exp(-1.466f / (T * sr));
+        *tgt = 1.0f;                             /* (the Rev2's attack: a straight line, digital and quick) */
+        *k = 1.0f / (T * sr);
+        *lin = true;
         break;
     }
     case ES_DEC: {
         mt = v.dst[MD_FENV_DEC + ei] + v.dst[MD_ENV_DEC];
         float T = envSec(clampf((float)Q[2] + mt, 0.0f, 127.0f));
         *tgt = sus;
-        *k = 1.0f - std::exp(-5.0f / (T * sr));
+        *k = 1.0f - std::exp(-4.6f / (T * sr));
         break;
     }
     case ES_REL: {
         mt = v.dst[MD_FENV_REL + ei] + v.dst[MD_ENV_REL];
         float T = envSec(clampf((float)Q[4] + mt, 0.0f, 127.0f));
         *tgt = 0.0f;
-        *k = 1.0f - std::exp(-5.0f / (T * sr));
+        *k = 1.0f - std::exp(-4.6f / (T * sr));
         break;
     }
     default:
@@ -1082,39 +1088,6 @@ void Engine::envChunk(Env &e, int ei, const Voice &v, const int16_t *P, float *t
 }
 
 /* --------------------------------------------------------------- the voice --- */
-static inline float ladder(float *s, float x, float G, float ig, float G4, float k, float drv, float idrv)
-{
-    float G2 = G * G;
-    float S = (G2 * G * s[0] + G2 * s[1] + G * s[2] + s[3]) * ig;
-    float u = (x - k * S) * G4;
-    u = sat(u * drv) * idrv;
-    float rs, y1, y2, y3, y4;
-    rs = (u - s[0]) * G;
-    y1 = rs + s[0];
-    s[0] = y1 + rs;
-    rs = (y1 - s[1]) * G;
-    y2 = rs + s[1];
-    s[1] = y2 + rs;
-    rs = (y2 - s[2]) * G;
-    y3 = rs + s[2];
-    s[2] = y3 + rs;
-    rs = (y3 - s[3]) * G;
-    y4 = rs + s[3];
-    s[3] = y4 + rs;
-    return y4;
-}
-
-/* the 2-pole: a state-variable low-pass, its input saturating as the ladder's */
-static inline float svf(float *s, float x, float g, float kd, float drv, float idrv)
-{
-    x = sat(x * drv) * idrv;
-    float a1 = 1.0f / (1.0f + g * (g + kd)), a2 = g * a1;
-    float v3 = x - s[1], v1 = a1 * s[0] + a2 * v3, v2 = s[1] + g * v1;
-    s[0] = 2.0f * v1 - s[0];
-    s[1] = 2.0f * v2 - s[1];
-    return v2;
-}
-
 void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
 {
     Layer &ly = L_[v.layer];
@@ -1139,12 +1112,12 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
     src[MS_ENV_LPF] = v.e[0].v;
     src[MS_ENV_VCA] = v.e[1].v;
     src[MS_ENV3] = v.e[2].v;
-    src[MS_PITCHBEND] = bendV;
-    src[MS_MODWHEEL] = mwV;
-    src[MS_PRESSURE] = prV;
-    src[MS_BREATH] = brV;
-    src[MS_FOOT] = ftV;
-    src[MS_EXPRESSION] = exV;
+    src[MS_PITCHBEND] = ctl[0];
+    src[MS_MODWHEEL] = ctl[1];
+    src[MS_PRESSURE] = ctl[2];
+    src[MS_BREATH] = ctl[3];
+    src[MS_FOOT] = ctl[4];
+    src[MS_EXPRESSION] = ctl[5];
     src[MS_VELOCITY] = v.vel;
     src[MS_NOTE] = (float)v.note / 127.0f;
     src[MS_NOISE] = rndF(v.seed);
@@ -1178,7 +1151,7 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
         v.p2 = v.p2 < v.t2 ? minf(v.p2 + st, v.t2) : maxf(v.p2 - st, v.t2);
     } else
         v.p2 = v.t2;
-    float bendS = bendV * (float)P[L_PB_RANGE];
+    float bendS = ctl[0] * (float)P[L_PB_RANGE];
     float k1 = P[L_O1_KEY] ? v.p1 : 60.0f, k2 = P[L_O2_KEY] ? v.p2 : 60.0f;
     float n1 = k1 + (float)(P[L_O1_FREQ] - 36) + P[L_O1_FINE] * 0.01f + (v.dr1 + v.uniDet) * 0.01f + bendS + d[MD_OSC1_FREQ] + d[MD_OSC_FREQ];
     float n2 = k2 + (float)(P[L_O2_FREQ] - 36) + P[L_O2_FINE] * 0.01f + (v.dr2 - v.uniDet * 0.7f) * 0.01f + bendS + d[MD_OSC2_FREQ] + d[MD_OSC_FREQ];
@@ -1186,35 +1159,21 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
     Wave w1, w2;
     w1.set(P[L_O1_SHAPE], ((float)P[L_O1_SHMOD] + (d[MD_OSC1_SHAPE] + d[MD_OSC_SHAPE]) * (99.0f / 127.0f)) / 99.0f);
     w2.set(P[L_O2_SHAPE], ((float)P[L_O2_SHMOD] + (d[MD_OSC2_SHAPE] + d[MD_OSC_SHAPE]) * (99.0f / 127.0f)) / 99.0f);
-    /* the mixer */
-    float mix = clampf((float)P[L_OSC_MIX] + d[MD_OSC_MIX], 0.0f, 127.0f) / 127.0f;
-    float g1 = 0.5f * minf(1.0f, 2.0f * (1.0f - mix)) * clampf(1.0f + d[MD_OSC1_LEVEL] / 127.0f, 0.0f, 2.0f);
-    float g2 = 0.5f * minf(1.0f, 2.0f * mix);
-    float gs = 0.5f * clampf((float)P[L_SUB] + d[MD_SUB], 0.0f, 127.0f) / 127.0f;
-    float gn = 0.6f * clampf((float)P[L_NOISE] + d[MD_NOISE], 0.0f, 127.0f) / 127.0f * std::sqrt(sr / 44100.0f);
     bool sync = P[L_SYNC] != 0;
-    /* the envelopes' targets this chunk */
+    /* the envelopes' targets this chunk (the attack a straight line, decay and release curves: the Rev2's) */
     float et[3], ek[3];
+    bool el[3];
     for (int i = 0; i < 3; i++)
-        envChunk(v.e[i], i, v, P, &et[i], &ek[i]);
+        envChunk(v.e[i], i, v, P, &et[i], &ek[i], &el[i]);
     /* the filter: cutoff in its units (0..164 over ten octaves from 20 Hz) */
-    float fvs = 1.0f;
     float famt = clampf((float)P[L_FENV_AMT] + d[MD_FENV_AMT] + d[MD_ENV_AMT], -127.0f, 127.0f);
     float cutU = (float)P[L_CUTOFF] + d[MD_CUTOFF] * (164.0f / 127.0f) + v.vel * (float)P[L_FVEL] * 0.6f;
     float oct0 = cutU * (10.0f / 164.0f) + ((float)P[L_KEYAMT] / 64.0f) * (v.p1 - 60.0f) / 12.0f;
-    float envOct = famt / 127.0f * 9.0f * fvs;
+    float envOct = famt / 127.0f * 9.0f;
     float reso = clampf((float)P[L_RESO] + d[MD_RESO], 0.0f, 127.0f) / 127.0f;
-    float am = clampf((float)P[L_AUDIOMOD] + d[MD_AUDIOMOD], 0.0f, 127.0f) / 127.0f * 4.0f;   /* octaves */
     bool pole4 = P[L_POLE4] != 0;
-    float kres = pole4 ? reso * 4.15f : 0.0f;
-    float kd2 = 2.0f - 1.84f * reso;              /* the 2-pole's damping (its Q to about 6) */
-    float comp = pole4 ? 1.0f + kres * 0.32f : 1.0f / (1.0f + 0.9f * reso);
-    const int os = sr < 70000.0f ? 2 : 1;
-    const float wlp = PI / (sr * (float)os);
     /* the amplifier */
     float avs = 1.0f - (float)P[L_AVEL] / 127.0f * (1.0f - v.vel);
-    float aamt = clampf((float)P[L_AENV_AMT] + d[MD_AENV_AMT] + d[MD_ENV_AMT], 0.0f, 127.0f) / 127.0f * avs;
-    float base = clampf((float)P[L_VCA_LEVEL] / 127.0f + d[MD_VCA] / 127.0f, 0.0f, 1.0f);
     float pgm = (float)P[L_PGM_VOL] / 100.0f * VOICE_GAIN;
     if ((v.key == K_UNI || (v.key >= K_ARP && P[L_UNISON])) && ly.uniN > 1)
         pgm *= 1.0f / std::sqrt((float)ly.uniN);   /* (a stack as loud as a fat note, not N notes) */
@@ -1225,23 +1184,72 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
     else
         pan = v.panSlot * (float)P[L_PAN_SPREAD] / 127.0f + d[MD_PAN] / 127.0f;
     pan = clampf(pan, -1.0f, 1.0f);
-    if (v.lc < 0.0f) {
-        v.lc = oct0;
-        v.lres = reso;
-        v.lpan = pan;
+    /* everything a knob or a modulation moves, ramped across the chunk from where the last one ended: no zipper,
+     * no click, at any speed of turning (SM_*) */
+    float tgt[NSM];
+    float mix = clampf((float)P[L_OSC_MIX] + d[MD_OSC_MIX], 0.0f, 127.0f) / 127.0f;
+    tgt[SM_G1] = 0.5f * minf(1.0f, 2.0f * (1.0f - mix)) * clampf(1.0f + d[MD_OSC1_LEVEL] / 127.0f, 0.0f, 2.0f);
+    tgt[SM_G2] = 0.5f * minf(1.0f, 2.0f * mix);
+    tgt[SM_GS] = 0.5f * clampf((float)P[L_SUB] + d[MD_SUB], 0.0f, 127.0f) / 127.0f;
+    tgt[SM_GN] = 0.6f * clampf((float)P[L_NOISE] + d[MD_NOISE], 0.0f, 127.0f) / 127.0f * std::sqrt(sr / 44100.0f);
+    tgt[SM_CUT] = oct0;
+    tgt[SM_ENV] = envOct;
+    tgt[SM_RES] = reso;
+    tgt[SM_AM] = clampf((float)P[L_AUDIOMOD] + d[MD_AUDIOMOD], 0.0f, 127.0f) / 127.0f * 4.0f;   /* octaves */
+    tgt[SM_AMT] = clampf((float)P[L_AENV_AMT] + d[MD_AENV_AMT] + d[MD_ENV_AMT], 0.0f, 127.0f) / 127.0f * avs;
+    tgt[SM_BASE] = clampf((float)P[L_VCA_LEVEL] / 127.0f + d[MD_VCA] / 127.0f, 0.0f, 1.0f);
+    tgt[SM_PGM] = pgm;
+    tgt[SM_PAN] = pan;
+    tgt[SM_INC1] = inc1;
+    tgt[SM_INC2] = inc2;
+    if (!v.smOk) {
+        for (int i = 0; i < NSM; i++)
+            v.sm[i] = tgt[i];
+        v.smOk = true;
     }
-    float c0 = v.lc, dc = (oct0 - v.lc) / (float)CH;
-    float p0 = v.lpan, dp = (pan - v.lpan) / (float)CH;
-    v.lc = oct0;
-    v.lpan = pan;
+    float cur[NSM], stp[NSM];
+    const float inv = 1.0f / (float)CH;
+    for (int i = 0; i < NSM; i++) {
+        cur[i] = v.sm[i];
+        stp[i] = (tgt[i] - v.sm[i]) * inv;
+        v.sm[i] = tgt[i];
+    }
     const float steal = 1.0f / (0.0045f * sr);
-    float drv = 1.0f, idrv = 1.0f;
+    /* the filter's rate: HIGH 4x, ECO 2x (each halved from 88.2 kHz up) */
+    int os = quality ? 4 : 2;
+    if (sr > 80000.0f)
+        os /= 2;
+    if (sr > 160000.0f)
+        os = 1;
+    const float fos = sr * (float)os, wmax = 0.42f * fos;
+    const float wk = 2.0f * PI / fos;
+    /* a filter step: the Curtis 4-pole (four OTA stages, the resonance taken from the last, averaged over two
+     * samples; each stage's transconductor saturates, as the chip's do: the resonance rounds off and the stages slew
+     * when driven hard; part of the bass the resonance takes given back), or the 2-pole (a state variable, its band
+     * saturating) */
+    auto f4 = [&v](float x, float g, float k) {
+        float fb = 0.5f * (v.f[3] + v.ffb);
+        v.ffb = v.f[3];
+        float u = sat(x - 4.0f * k * fb);
+        v.f[0] += g * ota(u - v.f[0]);
+        v.f[1] += g * ota(v.f[0] - v.f[1]);
+        v.f[2] += g * ota(v.f[1] - v.f[2]);
+        v.f[3] += g * ota(v.f[2] - v.f[3]);
+        return v.f[3];
+    };
+    auto f2 = [&v](float x, float g, float kd) {
+        float a1 = 1.0f / (1.0f + g * (g + kd)), a2 = g * a1;
+        float v3 = sat(x) - v.f[1], v1 = a1 * v.f[0] + a2 * v3, v2 = v.f[1] + g * v1;
+        v.f[0] = softT(2.0f * v1 - v.f[0]);
+        v.f[1] = 2.0f * v2 - v.f[1];
+        return v2;
+    };
 
     for (int s = 0; s < CH; s++) {
-        c0 += dc;
-        p0 += dp;
+        for (int i = 0; i < NSM; i++)
+            cur[i] += stp[i];
         for (int i = 0; i < 3; i++)
-            v.e[i].v = minf(v.e[i].v + (et[i] - v.e[i].v) * ek[i], 1.0f);
+            v.e[i].v = el[i] ? minf(v.e[i].v + ek[i], 1.0f) : minf(v.e[i].v + (et[i] - v.e[i].v) * ek[i], 1.0f);
         float ae = v.e[1].v;
         if (v.fade < 1.0f) {                     /* taken: out on a smooth curve, then the note it was taken for */
             v.fade -= steal;
@@ -1254,11 +1262,10 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
                 ae = 0.0f;
                 if (v.pend) {
                     v.pend = false;
-                    v.lc = -1.0f;
                     int l = v.layer;
                     startVoice(v, l, v.pkey, v.pnote, v.pvel, v.pdet, true);
                     for (int i = 0; i < 3; i++)
-                        envChunk(v.e[i], i, v, P, &et[i], &ek[i]);
+                        envChunk(v.e[i], i, v, P, &et[i], &ek[i], &el[i]);
                 } else {
                     v.layer = -1;
                     v.key = -1;
@@ -1270,53 +1277,66 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
         }
         int wr1 = 0, wr2 = 0;
         float wd1 = 0.0f, wd2 = 0.0f;
-        float o2 = v.o2.tick(tab, w2, inc2, -1.0f, wr2, wd2);
-        float o1 = v.o1.tick(tab, w1, inc1, sync && wr2 ? wd2 : -1.0f, wr1, wd1);
+        float o2 = v.o2.tick(tab, w2, cur[SM_INC2], -1.0f, wr2, wd2);
+        float o1 = v.o1.tick(tab, w1, cur[SM_INC1], sync && wr2 ? wd2 : -1.0f, wr1, wd1);
         /* the sub: a square an octave under oscillator 1, its edges band-limited as the oscillators' */
         if (wr1) {
             v.flip = -v.flip;
             v.subR.add(tab, 2.0f * v.flip, minf(wd1, 0.999f), 0);
         }
         float sub = v.subR.out(v.flip);
-        float x = g1 * o1 + g2 * o2 + gs * sub;
-        x += (gn + 2e-5f) * rndF(v.seed);       /* (and the circuit's own hiss: what starts a filter singing) */
-        /* the low-pass, at twice the rate */
-        float oct = c0 + envOct * v.e[0].v + am * o1;
-        float hz = clampf(20.0f * ex2(oct), 12.0f, 18000.0f);
-        float g = tanW(wlp * hz);
-        float y;
+        float x = cur[SM_G1] * o1 + cur[SM_G2] * o2 + cur[SM_GS] * sub;
+        x += (cur[SM_GN] + 2e-5f) * rndF(v.seed);   /* (and the circuit's own hiss: what starts a filter singing) */
+        /* the low-pass, oversampled */
+        float oct = cur[SM_CUT] + cur[SM_ENV] * v.e[0].v + cur[SM_AM] * o1;
+        float hz = minf(20.0f * fexp2(clampf(oct, -1.5f, 10.5f)), wmax);
+        float res = cur[SM_RES], y;
         if (pole4) {
-            float ig = 1.0f / (1.0f + g), G = g * ig, G4 = 1.0f / (1.0f + kres * G * G * G * G);
-            float st[4] = {v.s1, v.s2, v.s3, v.s4};
-            if (os == 2) {
-                float e0 = hbAp4(x, v.ou0, HB_A0), e1 = hbAp4(x, v.ou1, HB_A1);
-                float z0 = ladder(st, e0, G, ig, G4, kres, drv, idrv);
-                float z1 = ladder(st, e1, G, ig, G4, kres, drv, idrv);
-                y = 0.5f * (hbAp4(z0, v.od0, HB_A0) + hbAp4(v.odp, v.od1, HB_A1));
-                v.odp = z1;
+            /* (the cutoff as a one-pole's coefficient; tuned a little up as the explicit stages lag) */
+            float g = 1.0f - fexp2(-wk * hz * 1.4427f * 1.06f);
+            float k = res * 1.22f;               /* (from about 0.85 of RESONANCE it sings on its own) */
+            if (os == 4) {
+                float a, b, a0, a1, b0, b1;
+                v.os1.up(x, a, b);
+                v.os2.up(a, a0, a1);
+                v.os2.up(b, b0, b1);
+                a0 = f4(a0, g, k);
+                a1 = f4(a1, g, k);
+                b0 = f4(b0, g, k);
+                b1 = f4(b1, g, k);
+                y = v.os1.down(v.os2.down(a0, a1), v.os2.down(b0, b1));
+            } else if (os == 2) {
+                float a, b;
+                v.os1.up(x, a, b);
+                y = v.os1.down(f4(a, g, k), f4(b, g, k));
             } else
-                y = ladder(st, x, G, ig, G4, kres, drv, idrv);
-            v.s1 = st[0];
-            v.s2 = st[1];
-            v.s3 = st[2];
-            v.s4 = st[3];
+                y = f4(x, g, k);
+            y *= 1.0f + 0.45f * k;               /* (the bass the resonance takes, partly given back) */
         } else {
-            float st[2] = {v.f1, v.f2};
-            if (os == 2) {
-                float e0 = hbAp4(x, v.ou0, HB_A0), e1 = hbAp4(x, v.ou1, HB_A1);
-                float z0 = svf(st, e0, g, kd2, drv, idrv);
-                float z1 = svf(st, e1, g, kd2, drv, idrv);
-                y = 0.5f * (hbAp4(z0, v.od0, HB_A0) + hbAp4(v.odp, v.od1, HB_A1));
-                v.odp = z1;
+            float g = tanW(minf(PI * hz / fos, 1.2f)), kd = 2.0f - 1.9f * res;
+            if (os == 4) {
+                float a, b, a0, a1, b0, b1;
+                v.os1.up(x, a, b);
+                v.os2.up(a, a0, a1);
+                v.os2.up(b, b0, b1);
+                a0 = f2(a0, g, kd);
+                a1 = f2(a1, g, kd);
+                b0 = f2(b0, g, kd);
+                b1 = f2(b1, g, kd);
+                y = v.os1.down(v.os2.down(a0, a1), v.os2.down(b0, b1));
+            } else if (os == 2) {
+                float a, b;
+                v.os1.up(x, a, b);
+                y = v.os1.down(f2(a, g, kd), f2(b, g, kd));
             } else
-                y = svf(st, x, g, kd2, drv, idrv);
-            v.f1 = st[0];
-            v.f2 = st[1];
+                y = f2(x, g, kd);
+            y *= 1.0f / (1.0f + 0.6f * res);
         }
-        float amp = clampf(base + aamt * ae, 0.0f, 1.0f);
-        if (base > 0.0f && v.fade < 1.0f)
+        float amp = clampf(cur[SM_BASE] + cur[SM_AMT] * ae, 0.0f, 1.0f);
+        if (cur[SM_BASE] > 0.0f && v.fade < 1.0f)
             amp *= v.fade;
-        float out = y * comp * amp * pgm * 0.9f;
+        float out = y * amp * cur[SM_PGM] * 0.9f;
+        float p0 = cur[SM_PAN];
         float gl = minf(1.0f, 1.0f - p0), gr = minf(1.0f, 1.0f + p0);
         Lo[s] += out * gl;
         Ro[s] += out * gr;
@@ -1330,25 +1350,23 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
         if (!v.gate)
             v.layer = -1;
     }
-    v.s1 = flushDn(v.s1);
-    v.s2 = flushDn(v.s2);
-    v.s3 = flushDn(v.s3);
-    v.s4 = flushDn(v.s4);
-    v.f1 = flushDn(v.f1);
-    v.f2 = flushDn(v.f2);
-    for (int q = 0; q < 5; q++) {
-        v.ou0[q] = flushDn(v.ou0[q]);
-        v.ou1[q] = flushDn(v.ou1[q]);
-        v.od0[q] = flushDn(v.od0[q]);
-        v.od1[q] = flushDn(v.od1[q]);
-    }
-    v.odp = flushDn(v.odp);
+    for (float &f : v.f)
+        f = flushDn(f);
+    v.ffb = flushDn(v.ffb);
+    v.os1.flush();
+    v.os2.flush();
 }
 
 /* ------------------------------------------------------------------ render --- */
 void Engine::chunk()
 {
     const float dt = (float)CH / sr;
+    /* the wheels, the pressure and the pedals glide (5 ms): no steps in the pitch, no crackle in a filter */
+    {
+        const float in[6] = {bendV, mwV, prV, brV, ftV, exV}, kc = 1.0f - std::exp(-dt / 0.005f);
+        for (int i = 0; i < 6; i++)
+            ctl[i] = flushDn(ctl[i] + (in[i] - ctl[i]) * kc);
+    }
     for (int l = 0; l < 2; l++) {
         Layer &ly = L_[l];
         std::memset(bufL[l], 0, sizeof bufL[l]);
@@ -1419,6 +1437,18 @@ void Engine::chunk()
         }
         ly.fx.set(P[L_FX_ON] != 0, P[L_FX_TYPE], (float)P[L_FX_MIX] + ly.fxDst[0], (float)P[L_FX_P1] + ly.fxDst[1] * 2.0f,
                   (float)P[L_FX_P2] + ly.fxDst[2], P[L_FX_CLK] != 0, ly.bpmNow, trackLo[l] < 1e8f ? hzOf(trackLo[l]) : 0.0f);
+        /* the layer's DC let go (8 Hz: a hard-driven filter or the sub never pushes the sum off the middle) */
+        for (int i = 0; i < CH; i++) {
+            float xl = bufL[l][i], xr = bufR[l][i];
+            ly.dcL = xl - ly.dcxL + dcR * ly.dcL;
+            ly.dcR = xr - ly.dcxR + dcR * ly.dcR;
+            ly.dcxL = xl;
+            ly.dcxR = xr;
+            bufL[l][i] = ly.dcL;
+            bufR[l][i] = ly.dcR;
+        }
+        ly.dcL = flushDn(ly.dcL);
+        ly.dcR = flushDn(ly.dcR);
         ly.fx.process(bufL[l], bufR[l], CH);
         ly.lastOut = 0.5f * (bufL[l][CH - 1] + bufR[l][CH - 1]);
     }

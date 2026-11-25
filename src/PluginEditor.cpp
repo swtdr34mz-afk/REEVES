@@ -28,8 +28,21 @@ public:
 
     void paint(juce::Graphics &g) override
     {
+        /* the body (scale, ribs, chrome, cap) drawn once at the screen's density and kept; only the line drawn each
+         * time: a knob turned costs a picture and a line (the Mac repaints a lot at once) */
+        float sc = g.getInternalContext().getPhysicalPixelScaleFactor();
+        auto r = getLocalBounds().toFloat();
+        if (body.isNull() || sc != bodyScale || bipolar != bodyBipolar) {
+            bodyScale = sc;
+            bodyBipolar = bipolar;
+            body = juce::Image(juce::Image::ARGB, juce::jmax(1, (int)std::ceil(r.getWidth() * sc)), juce::jmax(1, (int)std::ceil(r.getHeight() * sc)), true);
+            juce::Graphics bg(body);
+            bg.addTransform(juce::AffineTransform::scale(sc));
+            drawKnob(bg, r, 0.0f, bipolar, endless, false);
+        }
+        g.drawImage(body, r, juce::RectanglePlacement::stretchToFit);
         float pos = endless ? turned * 0.04f : shownPos;
-        drawKnob(g, getLocalBounds().toFloat(), endless ? pos - std::floor(pos) : pos, bipolar, endless);
+        drawKnobPointer(g, r, endless ? pos - std::floor(pos) : pos, endless);
     }
     void poll() override
     {
@@ -145,8 +158,9 @@ private:
     Target target;
     std::function<void(juce::RangedAudioParameter *)> onTouch;
     std::function<void(int)> onTurn;
-    bool endless = false, bipolar = false;
-    float shownPos = -1.0f, startY = 0.0f, acc = 0.0f, turned = 0.0f;
+    bool endless = false, bipolar = false, bodyBipolar = false;
+    float shownPos = -1.0f, startY = 0.0f, acc = 0.0f, turned = 0.0f, bodyScale = 0.0f;
+    juce::Image body;
     int startV = 0;
 };
 
@@ -158,7 +172,27 @@ public:
     {
         setRepaintsOnMouseActivity(true);
     }
-    void paint(juce::Graphics &g) override { drawButton(g, getLocalBounds().toFloat().reduced(1.0f), lit, down, isMouseOver()); }
+    void paint(juce::Graphics &g) override
+    {
+        /* (each look drawn once at the screen's density and kept) */
+        float sc = g.getInternalContext().getPhysicalPixelScaleFactor();
+        int k = (lit ? 1 : 0) | (down ? 2 : 0) | (isMouseOver() ? 4 : 0);
+        auto r = getLocalBounds().toFloat();
+        if (sc != cacheScale) {
+            for (auto &c : cache)
+                c = juce::Image();
+            cacheScale = sc;
+        }
+        if (cache[k].isNull()) {
+            auto big = r.expanded(r.getWidth() * 0.6f, r.getHeight() * 1.2f);
+            cache[k] = juce::Image(juce::Image::ARGB, juce::jmax(1, (int)std::ceil(big.getWidth() * sc)), juce::jmax(1, (int)std::ceil(big.getHeight() * sc)), true);
+            juce::Graphics cg(cache[k]);
+            cg.addTransform(juce::AffineTransform::scale(sc).translated(-big.getX() * sc, -big.getY() * sc));
+            drawButton(cg, r.reduced(1.0f), lit, down, isMouseOver());
+        }
+        auto big = r.expanded(r.getWidth() * 0.6f, r.getHeight() * 1.2f);
+        g.drawImage(cache[k], big, juce::RectanglePlacement::stretchToFit);
+    }
     void poll() override
     {
         bool l = isOn ? isOn() : false;
@@ -185,6 +219,8 @@ private:
     std::function<void()> onPress;
     std::function<bool()> isOn;
     bool lit = false, down = false;
+    juce::Image cache[8];
+    float cacheScale = 0.0f;
 };
 
 /* ----------------------------------------------------------------------------- LEDs --- */
@@ -434,7 +470,10 @@ private:
             s << n << v << proc.programName();
         } else if (panel.page == Panel::P_STEPS || panel.page == Panel::P_POLYREC) {
             auto sd = proc.seqCopy(l);
-            s << juce::String::toHexString(&sd, (int)sizeof sd, 0).hashCode64() << "|" << panel.track << "|" << panel.step << "|"
+            uint64_t hsh = 1469598103934665603ull;    /* (FNV-1a over the sequence's bytes) */
+            for (size_t i = 0; i < sizeof sd; i++)
+                hsh = (hsh ^ reinterpret_cast<const uint8_t *>(&sd)[i]) * 1099511628211ull;
+            s << (juce::int64)hsh << "|" << panel.track << "|" << panel.step << "|"
               << proc.seqStepNow[l].load() << "|" << proc.recStepNow[l].load() << "|" << (int)proc.recording[l].load()
               << proc.value(l, L_SEQ_D1 + panel.track);
         } else {
@@ -473,6 +512,8 @@ Panel::ReevesPanel(ReevesProcessor &p) : proc(p)
 Panel::~ReevesPanel()
 {
     stopTimer();
+    if (dialog != nullptr)                       /* (an open WRITE dialog goes with the editor: it uses its look) */
+        delete dialog.getComponent();
     setLookAndFeel(nullptr);
 }
 
@@ -586,6 +627,7 @@ std::vector<Panel::Entry> Panel::entries() const
             es.push_back(e);
         };
         gp("voices", "Voices");
+        gp("quality", "Quality (CPU)");
         gp("host_sync", "Host Sync");
         gp("transpose", "Transpose");
         {
@@ -747,6 +789,7 @@ void Panel::writeDialog()
     w->addButton("Write", 1, juce::KeyPress(juce::KeyPress::returnKey));
     w->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
     juce::Component::SafePointer<Panel> self(this);
+    dialog = w;
     w->enterModalState(true, juce::ModalCallbackFunction::create([self, w](int r) {
                            if (self && r == 1)
                                self->proc.writeProgram(w->getTextEditorContents("name"));
@@ -1084,13 +1127,13 @@ void Panel::build()
 }
 
 /* ------------------------------------------------------------------------------ painting --- */
-void Panel::paintBackground(juce::Graphics &g)
+void Panel::paintBackground(juce::Graphics &g, float sc)
 {
     using namespace juce;
     auto all = Rectangle<float>(0.0f, 0.0f, (float)W, (float)H);
     const float cheek = 42.0f;
     auto face = all.reduced(cheek, 0.0f);
-    drawPanelFace(g, face, 14000);
+    drawPanelFace(g, face, sc);
     drawWood(g, all.withWidth(cheek), 3);
     drawWood(g, all.withLeft((float)W - cheek), 4);
     for (float x : {cheek, (float)W - cheek}) {
@@ -1293,6 +1336,12 @@ void Panel::paintBackground(juce::Graphics &g)
         for (int i = 0; i < 5; i++)
             under(xs[i + 1], 448, bot[i]);
     }
+    /* the screws, the sheet's edge, and a few years of use over it all (worn round the knobs played most) */
+    for (float x : {60.0f, (float)W - 60.0f})
+        for (float y : {12.0f, (float)H - 12.0f})
+            drawScrew(g, {x, y}, 6.0f);
+    drawPanelEdge(g, face);
+    drawWear(g, face, 1.0f / sc, {at(520, 382), at(590, 382), at(85, 100), at(708, 82), at(545, 150), at(662, 382), at(880, 225)});
 }
 
 void Panel::paint(juce::Graphics &g)
@@ -1303,7 +1352,7 @@ void Panel::paint(juce::Graphics &g)
         background = juce::Image(juce::Image::RGB, juce::jmax(1, (int)std::ceil(W * sc)), juce::jmax(1, (int)std::ceil(H * sc)), true);
         juce::Graphics bg(background);
         bg.addTransform(juce::AffineTransform::scale(sc));
-        paintBackground(bg);
+        paintBackground(bg, sc);
     }
     g.drawImage(background, getLocalBounds().toFloat(), juce::RectanglePlacement::stretchToFit);
     /* the voices, outlined under the name (as the Rev2's model) */
@@ -1342,10 +1391,18 @@ ReevesEditor::ReevesEditor(ReevesProcessor &p) : AudioProcessorEditor(&p), proc(
     addAndMakeVisible(panel);
     panel.setBounds(0, 0, ReevesPanel::W, ReevesPanel::H);
     const double W = ReevesPanel::W, H = ReevesPanel::H;
+    /* the window: never larger than the screen it opens on (a MacBook Air too); the first time as large as the screen
+     * comfortably allows, after that as it was left */
+    auto area = juce::Rectangle<int>(0, 0, 1920, 1080);
+    if (auto *d = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
+        area = d->userArea;
+    double fit = juce::jmin((area.getWidth() - 40) / W, (area.getHeight() - 90) / H);
+    fit = juce::jlimit(0.45, 1.6, fit);
     setResizable(true, true);
-    setResizeLimits((int)(W * 0.5), (int)(H * 0.5), (int)(W * 1.6), (int)(H * 1.6));
+    setResizeLimits((int)(W * 0.45), (int)(H * 0.45), (int)(W * juce::jmax(0.5, fit)), (int)(H * juce::jmax(0.5, fit)));
     getConstrainer()->setFixedAspectRatio(W / H);
-    float s = juce::jlimit(0.5f, 1.6f, proc.uiScale.load());
+    double s = proc.uiScaleSet ? (double)proc.uiScale.load() : juce::jmin(fit, 1.0);
+    s = juce::jlimit(0.45, fit, s);
     setSize((int)std::lround(W * s), (int)std::lround(H * s));
 }
 
@@ -1354,4 +1411,5 @@ void ReevesEditor::resized()
     float s = (float)getWidth() / (float)ReevesPanel::W;
     panel.setTransform(juce::AffineTransform::scale(s));
     proc.uiScale = s;
+    proc.uiScaleSet = true;
 }

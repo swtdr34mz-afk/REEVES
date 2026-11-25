@@ -1,15 +1,16 @@
 # REEVES
 
 A 16-voice (or 8-voice) bi-timbral polysynth in the manner of the Sequential **Prophet Rev2**, as a **VST3** for
-Windows and the Mac, an **AU** for the Mac and a **standalone app**. By **swtdr34mz**. Its sound comes from the same
-oscillators, ladder filter and envelopes as [PROPHET 67](https://github.com/swtdr34mz-afk/PROPHET-67-VST).
+Windows and the Mac, an **AU** for the Mac, a **standalone app** and a plugin for **Akai MPC** hardware. By
+**swtdr34mz**. Its sound is its own: the Rev2's DCO shapes (with SHAPE MOD), a Curtis-style low-pass and the Rev2's
+digital envelopes, built on the band-limited oscillators of [PROPHET 67](https://github.com/swtdr34mz-afk/PROPHET-67-VST).
 
 Unofficial: not made, endorsed or supported by Sequential.
 
 ## Download
 
 [Actions](https://github.com/swtdr34mz-afk/REEVES/actions) → the newest green run → **Artifacts** at the bottom:
-`REEVES-Windows` or `REEVES-macOS` (a GitHub sign-in is needed for artifacts).
+`REEVES-Windows`, `REEVES-macOS` or `REEVES-MPC` (a GitHub sign-in is needed for artifacts).
 
 ## Installieren (kurz auf Deutsch)
 
@@ -23,8 +24,15 @@ Unofficial: not made, endorsed or supported by Sequential.
 Windows SmartScreen kann beim ersten Start der App warnen (sie ist nicht signiert): *Weitere Informationen →
 Trotzdem ausführen*.
 
-**Mac:** `REEVES.vst3` nach `~/Library/Audio/Plug-Ins/VST3/`, `REEVES.component` nach
-`~/Library/Audio/Plug-Ins/Components/`, dann einmal im Terminal: `xattr -cr` auf beide Dateien.
+**Mac (Ableton, Logic, ...):** Am besten die `.tar.gz` nehmen (Doppelklick entpackt sie; bei der `.zip` haben manche
+Macs die Signatur der Plugins verloren). `REEVES.vst3` nach `~/Library/Audio/Plug-Ins/VST3/`, `REEVES.component`
+nach `~/Library/Audio/Plug-Ins/Components/`. Dann einmal im Terminal:
+```
+xattr -cr ~/Library/Audio/Plug-Ins/VST3/REEVES.vst3 ~/Library/Audio/Plug-Ins/Components/REEVES.component
+```
+Die Plugins laufen auf Apple Silicon und Intel-Macs (eine Datei für beide).
+
+**MPC:** siehe [mpc/plugin/README.md](mpc/plugin/README.md).
 
 ## What it has
 
@@ -43,6 +51,7 @@ Trotzdem ausführen*.
 - **UNISON** of 1 to 16 voices with DETUNE and KEY MODE, and CHORD memory.
 - **HOST SYNC**: the clocks, synced LFOs and delays follow the DAW's tempo and position.
 - 32 factory programs; WRITE keeps your own (Documents/REEVES/Programs).
+- **QUALITY** (GLOBAL page): HIGH runs the oscillators and filters at 4x the sample rate, ECO at 2x (less CPU).
 
 ## The panel
 

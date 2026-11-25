@@ -1,0 +1,17 @@
+{
+  "name": "REEVES",
+  "manufacturer": "swtdr34mz",
+  "version": "1.0.0",
+  "format": "vst2",
+  "kind": "instrument",
+  "uid": "Rvs2",
+  "numInputs": 0,
+  "numOutputs": 2,
+  "category": "Synth",
+  "file32": "VST/reeves-arm32.so",
+  "file64": "VST/reeves-arm64.so",
+  "description": "REEVES: an 8- or 16-voice bi-timbral poly in the style of the Prophet Rev2. Two oscillators with shape mod, sub, noise and sync, a Curtis-style 4-pole or 2-pole low-pass, three envelopes, four LFOs, eight mod slots, an effect, arp, poly and gated sequencer per layer, stack and split. The same engine as the REEVES VST3.",
+  "author": "swtdr34mz",
+  "url": "https://github.com/swtdr34mz-afk/REEVES",
+  "license": "MPL-2.0"
+}

@@ -39,6 +39,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout ReevesProcessor::createLayou
     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"voices", 1}, "Voices",
                                                             juce::StringArray{"8 Voice", "16 Voice"}, 1));
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{"host_sync", 1}, "Host Sync", true));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"quality", 1}, "Quality",
+                                                            juce::StringArray{"ECO (2x)", "HIGH (4x)"}, 1));
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID{"transpose", 1}, "Transpose", -2, 2, 0));
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"volume", 1}, "Master Volume", juce::NormalisableRange<float>(0.0f, 1.0f), 0.7f,
@@ -371,6 +373,7 @@ void ReevesProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiB
         sentVoices = voices;
     }
     transpose = (int)std::lround(apvts.getRawParameterValue("transpose")->load());
+    engine.setQuality(apvts.getRawParameterValue("quality")->load() > 0.5f ? 1 : 0);
 
     /* the panel's commands */
     {
@@ -469,6 +472,7 @@ void ReevesProcessor::getStateInformation(juce::MemoryBlock &destData)
     auto state = apvts.copyState();
     state.setProperty("program", program, nullptr);
     state.setProperty("uiScale", (double)uiScale.load(), nullptr);
+    state.setProperty("uiScaleSet", uiScaleSet.load(), nullptr);
     state.setProperty("editLayer", editLayer.load(), nullptr);
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     auto *pg = xml->createNewChildElement("REEVESPROGRAM");
@@ -490,6 +494,7 @@ void ReevesProcessor::setStateInformation(const void *data, int sizeInBytes)
     auto state = juce::ValueTree::fromXml(*xml);
     program = (int)state.getProperty("program", 0);
     uiScale = (float)(double)state.getProperty("uiScale", 0.9);
+    uiScaleSet = (bool)state.getProperty("uiScaleSet", false);
     editLayer = (int)state.getProperty("editLayer", 0);
     apvts.replaceState(state);
     if (hasProg) {
