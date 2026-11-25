@@ -17,6 +17,35 @@ inline float clampf(float x, float lo, float hi) { return x < lo ? lo : x > hi ?
 inline float minf(float a, float b) { return a < b ? a : b; }
 inline float maxf(float a, float b) { return a > b ? a : b; }
 inline float ex2(float x) { return std::exp2(x); }
+/* 2^x, fast (a polynomial, as PROPHET 67's: 2e-7 off), for what runs per sample */
+inline float fexp2(float x)
+{
+    if (x < -126.0f)
+        return 0.0f;
+    if (x > 127.0f)
+        x = 127.0f;
+    float fl = std::floor(x), f = x - fl;
+    float p = 1.534580891e-04f;
+    p = p * f + 1.339993158e-03f;
+    p = p * f + 9.618488972e-03f;
+    p = p * f + 5.550328776e-02f;
+    p = p * f + 2.402264689e-01f;
+    p = p * f + 6.931472057e-01f;
+    p = p * f + 1.0f;
+    return std::ldexp(p, (int)fl);
+}
+/* a transconductor's curve: L tanh(x / L), L the level it saturates at (Pade, flat at +-3) */
+inline float ota(float x)
+{
+    const float L = 1.25f;
+    float t = x * (1.0f / L);
+    if (t > 3.0f)
+        return L;
+    if (t < -3.0f)
+        return -L;
+    float t2 = t * t;
+    return L * t * (27.0f + t2) / (27.0f + 9.0f * t2);
+}
 inline float hzOf(float midi) { return 440.0f * std::exp2((midi - 69.0f) * (1.0f / 12.0f)); }
 inline float flushDn(float x) { return std::fabs(x) < 1e-15f ? 0.0f : x; }
 inline float tanW(float w)                          /* tan(w) for the prewarp, w < ~1.2 */
@@ -235,4 +264,29 @@ inline float hbAp4(float x, float *t, const float *a)
     t[4] = y3;
     return y3;
 }
+/* a 2x stage: up (one sample in, two out) and down (two in, one out), each through the half-band */
+struct HalfBand {
+    float u0[5] = {}, u1[5] = {}, d0[5] = {}, d1[5] = {}, dp = 0.0f;
+    inline void up(float x, float &a, float &b)
+    {
+        a = hbAp4(x, u0, HB_A0);
+        b = hbAp4(x, u1, HB_A1);
+    }
+    inline float down(float a, float b)
+    {
+        float y = 0.5f * (hbAp4(a, d0, HB_A0) + hbAp4(dp, d1, HB_A1));
+        dp = b;
+        return y;
+    }
+    void flush()
+    {
+        for (int i = 0; i < 5; i++) {
+            u0[i] = flushDn(u0[i]);
+            u1[i] = flushDn(u1[i]);
+            d0[i] = flushDn(d0[i]);
+            d1[i] = flushDn(d1[i]);
+        }
+        dp = flushDn(dp);
+    }
+};
 } // namespace rv

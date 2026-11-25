@@ -6,9 +6,10 @@
  *              each. Two oscillators (sawtooth, saw+tri, triangle, pulse, each with SHAPE MOD), a square sub an octave
  *              under oscillator 1, white noise, hard sync, OSC SLOP (each oscillator's own slow drift), glide (four
  *              modes, each oscillator its own rate), KEY ON/OFF and NOTE RESET per oscillator
- *   filter     a Curtis-style low-pass, 4-pole (24 dB, self-oscillating; PROPHET 67's ladder) or 2-pole (12 dB, a
- *              state-variable), at twice the rate, with AUDIO MOD (oscillator 1 into the cutoff, per sample)
- *   envelopes  three DADSR (LPF, VCA, AUX with REPEAT), analogue curves
+ *   filter     a Curtis-style low-pass, 4-pole (24 dB, four saturating OTA stages, self-oscillating) or 2-pole (12 dB, a
+ *              state-variable), at 4x (HIGH) or 2x (ECO), with AUDIO MOD (oscillator 1 into the cutoff, per sample)
+ *   envelopes  three DADSR (LPF, VCA, AUX with REPEAT), the Rev2.s digital shapes: a straight attack, curved decay
+ *              and release
  *   modulation four LFOs per voice (free or KEY SYNC, CLK SYNC), eight mod slots of 22 sources and 53 destinations,
  *              the dedicated mod wheel, pressure, breath, velocity and foot routes, the gated sequencer's four tracks
  *   layers     two of everything, each with its own EFFECT, clock, ARP, poly sequencer (64 steps of up to six notes)
@@ -26,6 +27,8 @@
 namespace rv
 {
 constexpr int MAXV = 16, CH = 16, NKEYS = 32;
+/* the values ramped across a chunk */
+enum { SM_G1, SM_G2, SM_GS, SM_GN, SM_CUT, SM_ENV, SM_RES, SM_AM, SM_AMT, SM_BASE, SM_PGM, SM_PAN, SM_INC1, SM_INC2, NSM };
 
 class Engine
 {
@@ -38,6 +41,7 @@ public:
     void setParam(int layer, int p, int v);      /* one of a layer's (the host's automation) */
     void setProgramParam(int p, int v);
     void setVoices(int n);                       /* 8 or 16 */
+    void setQuality(int q) { quality = q ? 1 : 0; }   /* 1 HIGH: the filters at 4x; 0 ECO: at 2x */
     int voiceCount() const { return nVoices; }
 
     void noteOn(int note, float vel);            /* vel 0..1 */
@@ -97,13 +101,14 @@ private:
         float flip = 1.0f;
         Env e[3];
         float lph[4] = {}, lsh[4] = {};
-        float s1 = 0, s2 = 0, s3 = 0, s4 = 0, f1 = 0, f2 = 0;   /* the ladder; the 2-pole */
-        float ou0[5] = {}, ou1[5] = {}, od0[5] = {}, od1[5] = {}, odp = 0;
+        float f[4] = {}, ffb = 0.0f;             /* the filter's stages (the 2-pole: the first two), its feedback */
+        HalfBand os1, os2;                       /* its 2x and 4x */
+        float sm[NSM] = {};                      /* the ramped values, where the last chunk ended */
+        bool smOk = false;
         float dr1 = 0, dr2 = 0, dt1 = 0, dt2 = 0;
         int drn = 0;
         uint32_t seed = 1, age = 0;
         float dst[NMODDST] = {};
-        float lc = -1.0f, lres = 0.0f, lamp = 0.0f, lpan = 0.0f;   /* the last chunk's cutoff, reso, level, pan */
         float fade = 1.0f;
         int pnote = -1, pkey = -1;
         float pvel = 0.0f, pdet = 0.0f;
@@ -146,6 +151,7 @@ private:
         bool gRunning = false;
         float outLvl = 0.0f, lastOut = 0.0f;
         float trackHz = 0.0f;
+        float dcL = 0, dcR = 0, dcxL = 0, dcxR = 0;   /* the DC blocker */
         int uniN = 1;                            /* voices in the unison now */
         float fxDst[3] = {};                     /* FX MIX, P1, P2 from the newest voice's modulation */
     };
@@ -153,11 +159,13 @@ private:
     Program prog;
     Layer L_[2];
     Voice V[MAXV];
-    int nVoices = 16;
+    int nVoices = 16, quality = 1;
     float sr = 44100.0f;
     const float *tab = nullptr;
     uint32_t ageN = 0, noiseSeed = 0x2545F491u;
     float bendV = 0, mwV = 0, prV = 0, brV = 0, ftV = 0, exV = 0;
+    float ctl[6] = {};                           /* the same, gliding (chunk) */
+    float dcR = 0.999f;
     bool susOn = false, holdOn = false;
     bool hostPlaying = false, hostSync = true, hostWasPlaying = false;
     double hostPpq = 0.0, hostBpm = 120.0;
@@ -188,6 +196,6 @@ private:
     float lfoHz(const Layer &ly, int k, float extra) const;
     float stepsPerBeat(int l) const;
     void envGate(Env &e, const int16_t *P, int base, const Voice &v, int ei);
-    void envChunk(Env &e, int ei, const Voice &v, const int16_t *P, float *tgt, float *k);
+    void envChunk(Env &e, int ei, const Voice &v, const int16_t *P, float *tgt, float *k, bool *lin);
 };
 } // namespace rv
