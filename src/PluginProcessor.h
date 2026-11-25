@@ -64,7 +64,7 @@ public:
     std::atomic<bool> holdNow{false};
     juce::MidiKeyboardState keyboardState;
     juce::MidiMessageCollector uiMidi;          /* the editor's wheels */
-    std::atomic<float> uiScale{0.8f};
+    std::atomic<float> uiScale{0.9f};
     std::atomic<int> editLayer{0};              /* EDIT LAYER B: the panel shows layer B */
 
     /* the program's name and its sequences and chord memories (the engine's live copy) */

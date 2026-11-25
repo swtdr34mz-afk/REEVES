@@ -8,8 +8,10 @@ using Panel = ReevesPanel;
 
 namespace
 {
-constexpr float KD = 48.0f;                      /* a knob's size */
-constexpr float BW = 30.0f, BH = 17.0f;          /* a button's */
+constexpr float KD = 76.0f;                      /* a knob's size */
+constexpr float BW = 38.0f, BH = 21.0f;
+constexpr float FS = 1.32f;                     /* the legends' size, over the base sizes below */
+constexpr float LS = 15.0f;                     /* an LED list's step */          /* a button's */
 
 /* ------------------------------------------------------------------------------- a knob --- */
 /* a parameter's knob (target: which, now: the LFO or the layer chosen), or an endless encoder (onTurn) */
@@ -265,7 +267,7 @@ public:
         g.fillRoundedRectangle(r, 2.0f);
         g.setColour(Colours::white.withAlpha(0.08f));
         g.drawRoundedRectangle(r.reduced(0.5f), 2.0f, 1.0f);
-        auto in = r.reduced(5.0f, 4.0f);
+        auto in = r.reduced(8.0f, 6.0f);
         auto &proc = panel.proc;
         int l = panel.layer();
         auto mono = [&](float h) { return font(Face::mono, h); };
@@ -274,23 +276,23 @@ public:
         int prog = proc.getCurrentProgram();
         String pn = prog < NFACTORY ? "F" + String(prog + 1).paddedLeft('0', 2) : "U" + String(prog - NFACTORY + 1).paddedLeft('0', 2);
         g.setColour(col::oled);
-        g.setFont(mono(10.5f));
-        auto top = in.removeFromTop(11.0f);
+        g.setFont(mono(14.2f));
+        auto top = in.removeFromTop(15.0f);
         g.drawText(pn + (l ? "  B" : "  A") + (proc.compare ? " CMP" : ""), top, Justification::centredLeft, false);
         g.drawText(String((int)std::lround(proc.bpmNow.load())), top, Justification::centredRight, false);
         in.removeFromTop(1.0f);
         auto page = panel.page;
         if (page == Panel::P_HOME) {
-            g.setFont(sans(11.5f));
-            g.drawText(proc.programName(), in.removeFromTop(13.0f), Justification::centredLeft, true);
+            g.setFont(sans(15.5f));
+            g.drawText(proc.programName(), in.removeFromTop(17.0f), Justification::centredLeft, true);
             g.setColour(col::oledDim);
             g.fillRect(in.removeFromTop(1.0f));
             in.removeFromTop(3.0f);
             g.setColour(col::oled);
             String name, val;
             what(name, val);
-            g.setFont(sans(10.0f));
-            g.drawText(name, in.removeFromTop(12.0f), Justification::centred, true);
+            g.setFont(sans(13.5f));
+            g.drawText(name, in.removeFromTop(16.0f), Justification::centred, true);
             g.setFont(sans(val.length() > 9 ? 13.0f : 18.0f));
             g.drawFittedText(val, in.toNearestInt(), Justification::centred, 1, 0.6f);
             return;
@@ -298,9 +300,9 @@ public:
         if (page == Panel::P_STEPS) {
             auto s = proc.seqCopy(l);
             int t = panel.track;
-            g.setFont(sans(10.0f));
+            g.setFont(sans(13.5f));
             int dd = proc.value(l, L_SEQ_D1 + t);
-            g.drawText("Track " + String(t + 1) + "  " + MODDST_NAME[dd], in.removeFromTop(12.0f), Justification::centredLeft, true);
+            g.drawText("Track " + String(t + 1) + "  " + MODDST_NAME[dd], in.removeFromTop(16.0f), Justification::centredLeft, true);
             auto bars = in.removeFromTop(in.getHeight() - 12.0f);
             stepsArea = bars;
             float bw = bars.getWidth() / 16.0f;
@@ -321,7 +323,7 @@ public:
                     g.fillRect(b.withHeight(2.0f).withY(b.getBottom() + 1.0f));
                 }
             }
-            g.setFont(mono(10.0f));
+            g.setFont(mono(13.5f));
             int v = s.gated[t][panel.step];
             g.drawText("Step " + String(panel.step + 1) + ":  " + (v >= GSEQ_RESET ? String("Reset") : String(v)), in, Justification::centredLeft, false);
             return;
@@ -330,10 +332,10 @@ public:
             auto s = proc.seqCopy(l);
             bool rec = proc.recording[l].load();
             int st = rec ? proc.recStepNow[l].load() : juce::jmax(0, proc.seqStepNow[l].load());
-            g.setFont(sans(10.5f));
+            g.setFont(sans(14.2f));
             g.drawText(String(rec ? "RECORD" : "POLY SEQ") + "  Step " + String(st + 1) + " / " + String(juce::jmax<int>(s.length, 1)),
-                       in.removeFromTop(13.0f), Justification::centredLeft, true);
-            g.setFont(mono(10.0f));
+                       in.removeFromTop(17.0f), Justification::centredLeft, true);
+            g.setFont(mono(13.5f));
             String notes;
             static const char *const N[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
             int show = rec && st > 0 ? st - 1 : st;
@@ -344,7 +346,7 @@ public:
                 else if (n >= 2)
                     notes += String(N[(n - 2) % 12]) + String((n - 2) / 12 - 2) + " ";
             }
-            g.drawText(rec ? "last: " : "now: ", in.removeFromTop(12.0f), Justification::centredLeft, false);
+            g.drawText(rec ? "last: " : "now: ", in.removeFromTop(16.0f), Justification::centredLeft, false);
             g.drawFittedText(notes.isEmpty() ? String("rest") : notes, in.toNearestInt(), Justification::centredTop, 2, 0.7f);
             return;
         }
@@ -354,19 +356,19 @@ public:
             return;
         int it = juce::jlimit(0, (int)es.size() - 1, panel.item);
         static const char *const TITLE[] = {"", "MISC PARAMS", "MOD SLOT", "ARP", "SEQ", "", "GLOBAL", ""};
-        g.setFont(sans(9.5f));
+        g.setFont(sans(12.8f));
         g.setColour(col::oledDim);
-        g.drawText(String(TITLE[page]) + "  " + String(it + 1) + "/" + String((int)es.size()), in.removeFromTop(11.0f), Justification::centredLeft, false);
+        g.drawText(String(TITLE[page]) + "  " + String(it + 1) + "/" + String((int)es.size()), in.removeFromTop(15.0f), Justification::centredLeft, false);
         g.setColour(col::oled);
-        g.setFont(sans(11.0f));
-        g.drawText(es[(size_t)it].label, in.removeFromTop(13.0f), Justification::centredLeft, true);
+        g.setFont(sans(14.9f));
+        g.drawText(es[(size_t)it].label, in.removeFromTop(17.0f), Justification::centredLeft, true);
         auto &e = es[(size_t)it];
         int v = e.get();
-        g.setFont(sans(17.0f));
-        g.drawFittedText(e.text ? e.text(v) : String(v), in.removeFromTop(22.0f).toNearestInt(), Justification::centred, 1, 0.6f);
+        g.setFont(sans(23.0f));
+        g.drawFittedText(e.text ? e.text(v) : String(v), in.removeFromTop(30.0f).toNearestInt(), Justification::centred, 1, 0.6f);
         if (it + 1 < (int)es.size()) {
             g.setColour(col::oledDim);
-            g.setFont(sans(9.5f));
+            g.setFont(sans(12.8f));
             g.drawText(es[(size_t)it + 1].label, in, Justification::centredLeft, true);
         }
     }
@@ -753,9 +755,9 @@ void Panel::writeDialog()
 }
 
 /* ------------------------------------------------------------------------------- the build --- */
-/* the panel's places, in the Rev2 desktop module's own layout (its photo's pixels, 1.3 times) */
+/* the panel's places, in the Rev2 desktop module's own layout (its photo's pixels: 1.3 times across, 1.55 down) */
 static float X(float px) { return px * 1.3f; }
-static float Y(float py) { return py * 1.3f - 12.0f; }
+static float Y(float py) { return py * 1.55f - 22.0f; }
 static juce::Point<float> at(float px, float py) { return {X(px), Y(py)}; }
 
 void Panel::build()
@@ -883,7 +885,7 @@ void Panel::build()
     /* REEVES' own, under the name: VOICES (8 or 16), HOST SYNC, the voices playing */
     {
         button(950, 156, globToggle("voices"), [] { return false; });
-        leds(970, 151, 2, 13.0f, [this](int i) { return (proc.apvts.getRawParameterValue("voices")->load() > 0.5f) == (i == 1) ? 1.0f : 0.0f; },
+        leds(972, 151, 2, LS, [this](int i) { return (proc.apvts.getRawParameterValue("voices")->load() > 0.5f) == (i == 1) ? 1.0f : 0.0f; },
              [this, glob](int i) {
                  auto *q = glob("voices");
                  q->beginChangeGesture();
@@ -911,7 +913,7 @@ void Panel::build()
                 return 0.0f;
             return std::fabs(proc.lfoNow[l][k].load());
         });
-        al->setBounds((int)X(105) - 6, (int)Y(205) - 20, 12, (int)(Y(300) - Y(205)) + 40);
+        al->setBounds((int)X(107) - 6, (int)Y(205) - 20, 12, (int)(Y(300) - Y(205)) + 40);
         button(128, 222,
                [this] {
                    int l = layer(), p = L_LFO1 + lfoSel * LFO_N + LFO_SHAPE;
@@ -919,7 +921,7 @@ void Panel::build()
                    touch(l, p);
                },
                [] { return false; });
-        leds(152, 199, NLFOSHAPE, 12.0f, [this](int i) { return proc.value(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE) == i ? 1.0f : 0.0f; },
+        leds(150, 196, NLFOSHAPE, LS, [this](int i) { return proc.value(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE) == i ? 1.0f : 0.0f; },
              [this](int i) { proc.setValue(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE, i); });
         lknob(222, 225, LFO_FREQ);
         lknob(145, 292, LFO_DEST);
@@ -968,7 +970,7 @@ void Panel::build()
                    touch(l, L_SEQ_TYPE);
                },
                [] { return false; });
-        leds(567, 215, 2, 13.0f, [this](int i) { return (proc.value(layer(), L_SEQ_TYPE) == ST_POLY) == (i == 1) ? 1.0f : 0.0f; },
+        leds(565, 213, 2, LS, [this](int i) { return (proc.value(layer(), L_SEQ_TYPE) == ST_POLY) == (i == 1) ? 1.0f : 0.0f; },
              [this](int i) { proc.setValue(layer(), L_SEQ_TYPE, i ? ST_POLY : ST_GATED); });
         button(573, 288,
                [this] {
@@ -1039,44 +1041,44 @@ void Panel::build()
                        touch(l, p);
                    },
                    [] { return false; });
-            leds(px + 23.0f, py - 17.0f, 4, 12.0f, [this, p](int i) { return proc.value(layer(), p) == i + 1 ? 1.0f : 0.0f; },
+            leds(px + 22.0f, py - 19.0f, 4, LS, [this, p](int i) { return proc.value(layer(), p) == i + 1 ? 1.0f : 0.0f; },
                  [this, p](int i) {
                      int l = layer();
                      proc.setValue(l, p, proc.value(l, p) == i + 1 ? 0 : i + 1);
                      touch(l, p);
                  });
         };
-        knob(85, 378, L_O1_FREQ);
-        knob(152, 378, L_O1_FINE);
-        shapeBtn(205, 370, L_O1_SHAPE);
-        knob(300, 378, L_O1_SHMOD);
-        knob(372, 378, L_SUB);
-        knob(445, 378, L_NOISE);
-        button(122, 413, toggle(L_SYNC), isOn(L_SYNC));
-        knob(85, 440, L_O2_FREQ);
-        knob(152, 440, L_O2_FINE);
-        shapeBtn(205, 432, L_O2_SHAPE);
-        knob(300, 440, L_O2_SHMOD);
-        knob(372, 440, L_OSC_MIX);
-        knob(445, 440, L_SLOP);
+        knob(85, 382, L_O1_FREQ);
+        knob(152, 382, L_O1_FINE);
+        shapeBtn(205, 374, L_O1_SHAPE);
+        knob(300, 382, L_O1_SHMOD);
+        knob(372, 382, L_SUB);
+        knob(445, 382, L_NOISE);
+        button(118, 420, toggle(L_SYNC), isOn(L_SYNC));
+        knob(85, 448, L_O2_FREQ);
+        knob(152, 448, L_O2_FINE);
+        shapeBtn(205, 440, L_O2_SHAPE);
+        knob(300, 448, L_O2_SHMOD);
+        knob(372, 448, L_OSC_MIX);
+        knob(445, 448, L_SLOP);
     }
     /* LOW-PASS FILTER */
     {
         const float xs[6] = {520, 590, 662, 735, 808, 880};
         const int top[6] = {L_CUTOFF, L_RESO, L_FENV_AMT, L_FVEL, L_KEYAMT, L_AUDIOMOD};
         for (int i = 0; i < 6; i++)
-            knob(xs[i], 378, top[i]);
-        button(518, 437, toggle(L_POLE4), isOn(L_POLE4));
+            knob(xs[i], 382, top[i]);
+        button(518, 446, toggle(L_POLE4), isOn(L_POLE4));
         const int bot[5] = {L_FDEL, L_FATT, L_FDEC, L_FSUS, L_FREL};
         for (int i = 0; i < 5; i++)
-            knob(xs[i + 1], 440, bot[i]);
+            knob(xs[i + 1], 448, bot[i]);
     }
     /* AMPLIFIER */
     {
         const int top[4] = {L_PAN_SPREAD, L_AENV_AMT, L_AVEL, L_ADEL}, bot[4] = {L_AATT, L_ADEC, L_ASUS, L_AREL};
         for (int i = 0; i < 4; i++) {
-            knob(955.0f + 70.0f * (float)i, 378, top[i]);
-            knob(955.0f + 70.0f * (float)i, 440, bot[i]);
+            knob(955.0f + 70.0f * (float)i, 382, top[i]);
+            knob(955.0f + 70.0f * (float)i, 448, bot[i]);
         }
     }
 }
@@ -1102,7 +1104,7 @@ void Panel::paintBackground(juce::Graphics &g)
     /* the jacks' names along the top */
     {
         g.setColour(col::legend.withAlpha(0.85f));
-        g.setFont(font(Face::label, 9.5f));
+        g.setFont(font(Face::label, 11.0f));
         const std::pair<float, const char *> J[] = {{125, "Phones"}, {165, "Left"}, {200, "Right"}, {245, "Left"}, {280, "Right"},
                                                      {585, "Pedal/CV"}, {628, "Sustain"}, {670, "Sequencer"}, {720, "MIDI Thru"},
                                                      {775, "MIDI Out"}, {830, "MIDI In"}, {880, "USB"}, {1060, "AC In"}, {1135, "On/Off"}};
@@ -1129,14 +1131,14 @@ void Panel::paintBackground(juce::Graphics &g)
 
     auto under = [&](float px, float py, const char *t, float size = 10.5f) {
         auto c = at(px, py);
-        drawLegend(g, t, Rectangle<float>(c.x - 46.0f, c.y + 25.0f, 92.0f, 13.0f), size);
+        drawLegend(g, t, Rectangle<float>(c.x - 50.0f, c.y + 36.0f, 100.0f, 17.0f), size * FS);
     };
     auto underB = [&](float px, float py, const char *t, float size = 10.0f) {
         auto c = at(px, py);
-        drawLegend(g, t, Rectangle<float>(c.x - 44.0f, c.y + 11.0f, 88.0f, 13.0f), size);
+        drawLegend(g, t, Rectangle<float>(c.x - 52.0f, c.y + 13.0f, 104.0f, 17.0f), juce::jmax(10.0f, size) * FS);
     };
     auto small = [&](Rectangle<float> r, const char *t, Justification j = Justification::centredLeft, float size = 9.0f) {
-        g.setFont(font(Face::label, size));
+        g.setFont(font(Face::title, size * FS));
         g.setColour(col::legend);
         g.drawText(t, r, j, false);
     };
@@ -1145,7 +1147,7 @@ void Panel::paintBackground(juce::Graphics &g)
     under(85, 100, "MASTER VOLUME", 10.0f);
     {
         /* MODULATION: its name over a line, as on the module */
-        auto f = font(Face::title, 13.0f).withExtraKerningFactor(0.05f);
+        auto f = font(Face::title, 16.5f).withExtraKerningFactor(0.05f);
         auto r = R(130, 54, 265, 66);
         float tw = textWidth(f, "MODULATION");
         g.setColour(col::frame);
@@ -1163,7 +1165,7 @@ void Panel::paintBackground(juce::Graphics &g)
     underB(392, 77, "GLIDE");
     underB(320, 145, "UNISON");
     underB(392, 145, "HOLD");
-    small(C(468, 97, 40, 10), "show", Justification::centred, 8.5f);
+    small(C(468, 96, 50, 14), "show", Justification::centred, 8.5f);
     underB(468, 110, "MISC PARAMS", 9.5f);
     under(545, 82, "PARAMETER");
     under(545, 150, "VALUE");
@@ -1176,8 +1178,8 @@ void Panel::paintBackground(juce::Graphics &g)
     underB(833, 138, "Stack A+B");
     underB(895, 138, "Edit Layer B", 9.5f);
     underB(950, 156, "VOICES");
-    small(Rectangle<float>(X(980), Y(151) - 11.0f, 60.0f, 11.0f), "8 Voice");
-    small(Rectangle<float>(X(980), Y(151) + 2.0f, 60.0f, 11.0f), "16 Voice");
+    small(Rectangle<float>(X(972) + 9.0f, Y(151) - LS, 80.0f, LS), "8 Voice");
+    small(Rectangle<float>(X(972) + 9.0f, Y(151), 80.0f, LS), "16 Voice");
     underB(1045, 156, "HOST SYNC");
     drawTag(g, R(1100, 140, 1190, 172));
 
@@ -1186,28 +1188,28 @@ void Panel::paintBackground(juce::Graphics &g)
         float x0, y0, x1, y1;
         const char *t;
     };
-    const Sec S[] = {{55, 187, 293, 323, "LOW FREQUENCY OSCILLATORS"},
-                     {305, 187, 435, 323, "CLOCK"},
-                     {447, 187, 505, 323, "ARP"},
-                     {517, 187, 710, 323, "SEQUENCER"},
-                     {722, 187, 908, 323, "EFFECT"},
-                     {920, 187, 1195, 323, "AUXILIARY ENVELOPE"},
-                     {55, 335, 476, 473, "OSCILLATORS"},
-                     {488, 335, 907, 473, "LOW-PASS FILTER"},
-                     {920, 335, 1195, 473, "AMPLIFIER"}};
+    const Sec S[] = {{55, 187, 293, 331, "LOW FREQUENCY OSCILLATORS"},
+                     {305, 187, 435, 331, "CLOCK"},
+                     {447, 187, 505, 331, "ARP"},
+                     {517, 187, 710, 331, "SEQUENCER"},
+                     {722, 187, 908, 331, "EFFECT"},
+                     {920, 187, 1195, 331, "AUXILIARY ENVELOPE"},
+                     {55, 341, 476, 483, "OSCILLATORS"},
+                     {488, 341, 907, 483, "LOW-PASS FILTER"},
+                     {920, 341, 1195, 483, "AMPLIFIER"}};
     for (auto &s : S)
         drawSection(g, R(s.x0, s.y0, s.x1, s.y1), s.t);
 
     /* LFOs */
     {
         const float by[4] = {205, 237, 268, 300};
-        g.setFont(font(Face::title, 11.0f));
+        g.setFont(font(Face::title, 11.0f * FS));
         g.setColour(col::legend);
         for (int k = 0; k < 4; k++)
-            g.drawText(String(k + 1), C(68, by[k], 12, 12), Justification::centred, false);
+            g.drawText(String(k + 1), C(66, by[k], 16, 16), Justification::centred, false);
         underB(128, 222, "SHAPE");
         for (int i = 0; i < NLFOSHAPE; i++)
-            small(Rectangle<float>(X(160), Y(199) - 6.0f + 12.0f * (float)i, 60.0f, 12.0f), LFOSHAPE_NAME[i], Justification::centredLeft, 8.5f);
+            small(Rectangle<float>(X(150) + 9.0f, Y(196) - LS * 0.5f + LS * (float)i, 80.0f, LS), LFOSHAPE_NAME[i], Justification::centredLeft, 8.5f);
         under(222, 225, "FREQUENCY", 10.0f);
         underB(268, 222, "CLK SYNC", 9.0f);
         under(145, 292, "DESTINATION", 10.0f);
@@ -1222,17 +1224,17 @@ void Panel::paintBackground(juce::Graphics &g)
     /* SEQUENCER */
     {
         underB(543, 222, "TYPE");
-        small(Rectangle<float>(X(575), Y(215) - 6.5f, 40.0f, 13.0f), "Gated");
-        small(Rectangle<float>(X(575), Y(215) + 6.5f, 40.0f, 13.0f), "Poly");
+        small(Rectangle<float>(X(565) + 9.0f, Y(213) - LS, 60.0f, LS), "Gated");
+        small(Rectangle<float>(X(565) + 9.0f, Y(213), 60.0f, LS), "Poly");
         g.setColour(col::legend);
-        g.drawRoundedRectangle(Rectangle<float>(X(560), Y(215) + 6.0f, 46.0f, 14.0f), 6.0f, 1.0f);
-        g.drawArrow(Line<float>(X(573), Y(215) + 21.0f, X(573), Y(288) - 11.0f), 1.0f, 6.0f, 6.0f);
-        small(C(627, 205, 40, 10), "rest", Justification::centred, 8.5f);
-        small(C(627, 271, 40, 10), "tie", Justification::centred, 8.5f);
-        auto pb = C(573, 304, 38, 14);
+        g.drawRoundedRectangle(Rectangle<float>(X(565) - 10.0f, Y(213) - 1.0f, 60.0f, LS + 2.0f), 7.0f, 1.2f);
+        g.drawArrow(Line<float>(X(573), Y(213) + LS + 2.0f, X(573), Y(288) - 13.0f), 1.2f, 7.0f, 7.0f);
+        small(C(627, 203, 50, 14), "rest", Justification::centred, 8.5f);
+        small(C(627, 269, 50, 14), "tie", Justification::centred, 8.5f);
+        auto pb = C(573, 307, 50, 17);
         g.setColour(col::legend);
         g.drawRoundedRectangle(pb, 6.0f, 1.0f);
-        drawLegend(g, "PLAY", pb, 10.0f);
+        drawLegend(g, "PLAY", pb, 10.0f * FS);
         underB(627, 222, "MODE");
         under(682, 225, "TRACK");
         underB(627, 288, "DESTINATION", 9.5f);
@@ -1250,45 +1252,46 @@ void Panel::paintBackground(juce::Graphics &g)
             float x = 955.0f + 70.0f * (float)i;
             under(x, 225, top[i], 10.0f);
             under(x, 292, bot[i]);
-            under(x, 378, i == 0 ? "PAN SPREAD" : top[i], 10.0f);
-            under(x, 440, bot[i]);
+            under(x, 382, i == 0 ? "PAN SPREAD" : top[i], 10.0f);
+            under(x, 448, bot[i]);
         }
     }
     /* OSCILLATORS */
     {
-        under(85, 378, "OSC 1 FREQ", 10.0f);
-        under(152, 378, "FINE TUNE", 10.0f);
-        underB(205, 370, "SHAPE");
-        under(300, 378, "SHAPE MOD", 10.0f);
-        under(372, 378, "SUB OCTAVE", 10.0f);
-        under(445, 378, "NOISE");
+        under(85, 382, "OSC 1 FREQ", 10.0f);
+        under(152, 382, "FINE TUNE", 10.0f);
+        underB(205, 374, "SHAPE");
+        under(300, 382, "SHAPE MOD", 10.0f);
+        under(372, 382, "SUB OCTAVE", 10.0f);
+        under(445, 382, "NOISE");
         g.setFont(font(Face::title, 10.0f));
         g.setColour(col::legend);
-        g.drawText("SYNC", Rectangle<float>(X(122) + 19.0f, Y(413) - 6.0f, 40.0f, 12.0f), Justification::centredLeft, false);
-        under(85, 440, "OSC 2 FREQ", 10.0f);
-        under(152, 440, "FINE TUNE", 10.0f);
-        underB(205, 432, "SHAPE");
-        under(300, 440, "SHAPE MOD", 10.0f);
-        under(372, 440, "OSC MIX", 10.0f);
-        under(445, 440, "OSC SLOP", 10.0f);
-        g.setFont(font(Face::title, 9.5f));
-        g.drawText("1", C(352, 459, 10, 10), Justification::centred, false);
-        g.drawText("2", C(392, 459, 10, 10), Justification::centred, false);
+        g.setFont(font(Face::title, 10.0f * FS));
+        g.drawText("SYNC", Rectangle<float>(X(118) - 23.0f - 50.0f, Y(420) - 8.0f, 50.0f, 16.0f), Justification::centredRight, false);
+        under(85, 448, "OSC 2 FREQ", 10.0f);
+        under(152, 448, "FINE TUNE", 10.0f);
+        underB(205, 440, "SHAPE");
+        under(300, 448, "SHAPE MOD", 10.0f);
+        under(372, 448, "OSC MIX", 10.0f);
+        under(445, 448, "OSC SLOP", 10.0f);
+        g.setFont(font(Face::title, 9.5f * FS));
+        g.drawText("1", C(349, 471, 14, 14), Justification::centred, false);
+        g.drawText("2", C(395, 471, 14, 14), Justification::centred, false);
         const char *SN[4] = {"Sawtooth", "Saw+Tri", "Triangle", "Pulse"};
-        for (float py : {353.0f, 415.0f})
+        for (float py : {355.0f, 421.0f})
             for (int i = 0; i < 4; i++)
-                small(Rectangle<float>(X(234), Y(py) - 6.0f + 12.0f * (float)i, 60.0f, 12.0f), SN[i], Justification::centredLeft, 8.5f);
+                small(Rectangle<float>(X(227) + 9.0f, Y(py) - LS * 0.5f + LS * (float)i, 80.0f, LS), SN[i], Justification::centredLeft, 8.5f);
     }
     /* LOW-PASS FILTER */
     {
         const float xs[6] = {520, 590, 662, 735, 808, 880};
         const char *top[6] = {"CUTOFF", "RESONANCE", "ENV AMOUNT", "VELOCITY", "KEY AMOUNT", "AUDIO MOD"};
         for (int i = 0; i < 6; i++)
-            under(xs[i], 378, top[i], 10.0f);
-        underB(518, 437, "4 POLE");
+            under(xs[i], 382, top[i], 10.0f);
+        underB(518, 446, "4 POLE");
         const char *bot[5] = {"DELAY", "ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
         for (int i = 0; i < 5; i++)
-            under(xs[i + 1], 440, bot[i]);
+            under(xs[i + 1], 448, bot[i]);
     }
 }
 

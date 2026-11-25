@@ -76,13 +76,13 @@ void drawKnob(juce::Graphics &g, juce::Rectangle<float> r, float pos, bool bipol
     const Point<float> c = r.getCentre();
     const float a0 = -2.4f, a1 = 2.4f;
     const float ang = endless ? pos * MathConstants<float>::twoPi : a0 + pos * (a1 - a0);
-    const float rb = R * 0.64f;
+    const float rb = R * 0.70f;
 
     if (!endless) {                      /* the scale */
         g.setColour(col::legend);
         for (int i = 0; i <= 10; i++) {
             float a = a0 + (a1 - a0) * (float)i / 10.0f;
-            g.drawLine(Line<float>(c.getPointOnCircumference(R * 0.80f, a), c.getPointOnCircumference(R * (i == 5 && bipolar ? 0.99f : 0.93f), a)),
+            g.drawLine(Line<float>(c.getPointOnCircumference(R * 0.84f, a), c.getPointOnCircumference(R * (i == 5 && bipolar ? 1.0f : 0.96f), a)),
                        jmax(1.0f, d * 0.03f));
         }
         if (bipolar) {
@@ -168,6 +168,7 @@ void drawButton(juce::Graphics &g, juce::Rectangle<float> r, bool on, bool down,
 
 void drawLed(juce::Graphics &g, juce::Point<float> c, float s, float level)
 {
+    s *= 1.15f;
     using namespace juce;
     level = jlimit(0.0f, 1.0f, level);
     auto body = Rectangle<float>(s * 1.5f, s).withCentre(c);
@@ -193,8 +194,8 @@ void drawLegend(juce::Graphics &g, const juce::String &t, juce::Rectangle<float>
 void drawSection(juce::Graphics &g, juce::Rectangle<float> r, const juce::String &title)
 {
     using namespace juce;
-    auto f = font(Face::title, 13.0f).withExtraKerningFactor(0.05f);
-    float tw = textWidth(f, title), cx = r.getCentreX(), gl = cx - tw * 0.5f - 6.0f, gr = cx + tw * 0.5f + 6.0f, rad = 9.0f;
+    auto f = font(Face::title, 16.5f).withExtraKerningFactor(0.05f);
+    float tw = textWidth(f, title), cx = r.getCentreX(), gl = cx - tw * 0.5f - 7.0f, gr = cx + tw * 0.5f + 7.0f, rad = 10.0f;
     Path p;
     p.startNewSubPath(gr, r.getY());
     p.lineTo(r.getRight() - rad, r.getY());
@@ -214,7 +215,7 @@ void drawSection(juce::Graphics &g, juce::Rectangle<float> r, const juce::String
     if (title.isNotEmpty()) {
         g.setColour(col::legend);
         g.setFont(f);
-        g.drawText(title, Rectangle<float>(gl, r.getY() - 9.0f, gr - gl, 18.0f), Justification::centred, false);
+        g.drawText(title, Rectangle<float>(gl, r.getY() - 11.0f, gr - gl, 22.0f), Justification::centred, false);
     }
 }
 

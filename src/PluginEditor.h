@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 swtdr34mz (REEVES) */
-/* The editor: the Prophet Rev2 desktop module's front panel, drawn at 1625 x 630 and scaled to the window (drag the
+/* The editor: the Prophet Rev2 desktop module's front panel, drawn at 1625 x 742 and scaled to the window (drag the
  * corner). Its top strip (MASTER VOLUME, MODULATION, RATE/TIME, GLIDE, UNISON, HOLD, MISC PARAMS, the display with
  * PARAMETER, VALUE, PROGRAM and BANK, the program and layer buttons, the name with REEVES' own VOICES (8 or 16) and
  * HOST SYNC under it), then LOW FREQUENCY OSCILLATORS, CLOCK, ARP, SEQUENCER, EFFECT, AUXILIARY ENVELOPE, then
@@ -17,7 +17,7 @@
 class ReevesPanel : public juce::Component, private juce::Timer
 {
 public:
-    static constexpr int W = 1625, H = 630;
+    static constexpr int W = 1625, H = 742;
     explicit ReevesPanel(ReevesProcessor &);
     ~ReevesPanel() override;
     void paint(juce::Graphics &) override;

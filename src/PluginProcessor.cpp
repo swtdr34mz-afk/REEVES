@@ -488,7 +488,7 @@ void ReevesProcessor::setStateInformation(const void *data, int sizeInBytes)
     }
     auto state = juce::ValueTree::fromXml(*xml);
     program = (int)state.getProperty("program", 0);
-    uiScale = (float)(double)state.getProperty("uiScale", 0.8);
+    uiScale = (float)(double)state.getProperty("uiScale", 0.9);
     editLayer = (int)state.getProperty("editLayer", 0);
     apvts.replaceState(state);
     if (hasProg) {
