@@ -6,6 +6,7 @@
  * walnut end cheeks and the keyboard. The fonts are embedded (Fira Sans, Anonymous Pro: SIL OFL, fonts/). */
 #pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
+#include <vector>
 
 namespace rvui
 {
@@ -36,7 +37,9 @@ public:
 };
 
 /* a knob in r (square): pos 0..1; bipolar: '-' and '+' at the ends of its scale */
-void drawKnob(juce::Graphics &, juce::Rectangle<float> r, float pos, bool bipolar, bool endless = false);
+void drawKnob(juce::Graphics &, juce::Rectangle<float> r, float pos, bool bipolar, bool endless = false, bool pointer = true);
+/* its white line alone (a knob's body is drawn once and kept: only the line moves) */
+void drawKnobPointer(juce::Graphics &, juce::Rectangle<float> r, float pos, bool endless);
 /* a Rev2 button: dark with a fine grid, lit red when on */
 void drawButton(juce::Graphics &, juce::Rectangle<float> r, bool on, bool down, bool over);
 /* a small square LED */
@@ -44,7 +47,12 @@ void drawLed(juce::Graphics &, juce::Point<float> c, float size, float level);
 void drawSection(juce::Graphics &, juce::Rectangle<float> r, const juce::String &title);
 void drawLegend(juce::Graphics &, const juce::String &, juce::Rectangle<float>, float size = 12.0f,
                 juce::Justification j = juce::Justification::centred);
-void drawPanelFace(juce::Graphics &, juce::Rectangle<float> r, int dots, int seed = 2);
+/* the panel: black steel under a fine stippled powder coat (sc: the pixels a panel unit, for the coat's density) */
+void drawPanelFace(juce::Graphics &, juce::Rectangle<float> r, float sc);
+void drawPanelEdge(juce::Graphics &, juce::Rectangle<float> r);
+/* a few years of use over the print (px: a screen pixel in panel units; played: the knobs worn round most) */
+void drawWear(juce::Graphics &, juce::Rectangle<float> r, float px, const std::vector<juce::Point<float>> &played);
+void drawScrew(juce::Graphics &, juce::Point<float> c, float r);
 void drawWood(juce::Graphics &, juce::Rectangle<float> r, int seed);
 void drawTag(juce::Graphics &, juce::Rectangle<float> r);
 } // namespace rvui

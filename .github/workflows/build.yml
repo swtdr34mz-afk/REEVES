@@ -99,15 +99,21 @@ jobs:
           cp -R "$a/VST3/REEVES.vst3" "$a/AU/REEVES.component" "$a/Standalone/REEVES.app" $o/
           for b in $o/*.vst3 $o/*.component $o/*.app; do codesign --force --deep -s - "$b"; done
           cp README.md $o/
+          lipo -info "$o/REEVES.vst3/Contents/MacOS/REEVES"
           ditto -c -k --sequesterRsrc --keepParent $o $o.zip
+          tar -czf $o.tar.gz $o   # (the same as a .tar.gz: some Macs' unzip had lost the plugins' signatures)
 
       - uses: actions/upload-artifact@v4
         with:
           name: REEVES-${{ matrix.name }}
-          path: REEVES-*.zip
+          path: |
+            REEVES-*.zip
+            REEVES-*.tar.gz
 
       - name: release
         if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'release' || github.event_name == 'push')
         uses: softprops/action-gh-release@v2
         with:
-          files: REEVES-*.zip
+          files: |
+            REEVES-*.zip
+            REEVES-*.tar.gz

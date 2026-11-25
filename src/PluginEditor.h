@@ -62,7 +62,7 @@ public:
 private:
     void timerCallback() override;
     void build();
-    void paintBackground(juce::Graphics &);
+    void paintBackground(juce::Graphics &, float sc);
 
     rvui::Look look;
     std::vector<std::unique_ptr<juce::Component>> parts;
@@ -70,6 +70,7 @@ private:
     juce::Image background;
     float backgroundScale = 0.0f;
     std::vector<double> taps;
+    juce::Component::SafePointer<juce::AlertWindow> dialog;
     template <class T, class... A> T *add(A &&...a);
     friend class Oled;
 };

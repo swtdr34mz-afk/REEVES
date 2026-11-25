@@ -2,6 +2,7 @@
  * Copyright (C) 2026 swtdr34mz (REEVES) */
 #include "Look.h"
 #include "BinaryData.h"
+#include <map>
 
 namespace rvui
 {
@@ -11,6 +12,7 @@ struct Store
 {
     juce::Typeface::Ptr t[4];
     juce::Image tag;
+    std::map<int, juce::Image> coat;     /* the powder coat's tile, per pixel density */
 };
 static Store *store = nullptr;
 static Store &get()
@@ -28,8 +30,12 @@ static Store &get()
 }
 UiResources::~UiResources()
 {
+    /* (the last editor closed: the fonts, the coat and the tag let go here, on the message thread, never when the
+     * host unloads the plugin: on Windows that runs under the loader's lock, and freeing fonts there hung FL Studio) */
     delete store;
     store = nullptr;
+    juce::Typeface::clearTypefaceCache();
+    juce::ImageCache::releaseUnusedImages();
 }
 
 juce::Font font(Face f, float height) { return juce::Font(juce::FontOptions(get().t[(int)f]).withHeight(height)); }
@@ -69,7 +75,7 @@ void Look::drawPopupMenuBackground(juce::Graphics &g, int w, int h)
 /* ------------------------------------------------------------------------------- the knob --- */
 /* PROPHET 67's knob, seen from above: white scale ticks around it, the black ribbed body, a chrome ring, a dark
  * spun-metal cap and its white line */
-void drawKnob(juce::Graphics &g, juce::Rectangle<float> r, float pos, bool bipolar, bool endless)
+void drawKnob(juce::Graphics &g, juce::Rectangle<float> r, float pos, bool bipolar, bool endless, bool pointer)
 {
     using namespace juce;
     const float d = jmin(r.getWidth(), r.getHeight()), R = d * 0.5f;
@@ -126,6 +132,16 @@ void drawKnob(juce::Graphics &g, juce::Rectangle<float> r, float pos, bool bipol
     g.drawEllipse(Rectangle<float>(ri * 1.5f, ri * 1.5f).withCentre(c), 0.6f);
     g.setColour(Colours::black.withAlpha(0.8f));
     g.drawEllipse(Rectangle<float>(ri * 2.0f, ri * 2.0f).withCentre(c), 0.8f);
+    if (pointer)
+        drawKnobPointer(g, r, pos, endless);
+}
+
+void drawKnobPointer(juce::Graphics &g, juce::Rectangle<float> r, float pos, bool endless)
+{
+    using namespace juce;
+    const float d = jmin(r.getWidth(), r.getHeight()), ri = d * 0.5f * 0.70f * 0.70f;
+    const Point<float> c = r.getCentre();
+    const float ang = endless ? pos * MathConstants<float>::twoPi : -2.4f + pos * 4.8f;
     auto p0 = c.getPointOnCircumference(ri * 0.15f, ang), p1 = c.getPointOnCircumference(ri * 0.96f, ang);
     g.setColour(Colour(0xfff4f2ec));
     g.drawLine({p0, p1}, jmax(1.5f, d * 0.045f));
@@ -219,17 +235,208 @@ void drawSection(juce::Graphics &g, juce::Rectangle<float> r, const juce::String
     }
 }
 
-void drawPanelFace(juce::Graphics &g, juce::Rectangle<float> r, int dots, int seed)
+/* ---------------------------------------------------------------------------------- the coat --- */
+/* The panel's finish (SOLARIS-23's): a black textured powder coat on steel, a dense, even field of tiny round bumps,
+ * each about a panel unit across and lit from the upper left (a bright crown, a dark foot), the pigment's own grain
+ * between them: at arm's length a soft matte black metal, close up a fine pebbling. Made at the pixel density it is
+ * shown at (an 8K screen gets its own), kept per density, tiling seamlessly. */
+static juce::Image makeCoat(float sc)
 {
     using namespace juce;
-    g.setGradientFill(ColourGradient(col::panelTop, 0.0f, r.getY(), col::panelBottom, 0.0f, r.getBottom(), false));
+    const int T = 512;
+    std::vector<float> h((size_t)(T * T), 0.0f);
+    Random rnd(7719);
+    const float spacing = jmax(1.6f, 1.05f * sc);
+    const int n = (int)((float)T / spacing);
+    const float cell = (float)T / (float)n;
+    for (int gy = 0; gy < n; gy++)
+        for (int gx = 0; gx < n; gx++) {
+            float cx = ((float)gx + 0.2f + 0.6f * rnd.nextFloat()) * cell, cy = ((float)gy + 0.2f + 0.6f * rnd.nextFloat()) * cell;
+            float rad = cell * (0.42f + 0.18f * rnd.nextFloat()), amp = 0.7f + 0.5f * rnd.nextFloat();
+            int x0 = (int)std::floor(cx - rad * 1.8f), x1 = (int)std::ceil(cx + rad * 1.8f);
+            int y0 = (int)std::floor(cy - rad * 1.8f), y1 = (int)std::ceil(cy + rad * 1.8f);
+            for (int y = y0; y <= y1; y++)
+                for (int x = x0; x <= x1; x++) {
+                    float dx = ((float)x - cx) / rad, dy = ((float)y - cy) / rad, e = dx * dx + dy * dy;
+                    if (e < 3.2f)
+                        h[(size_t)(((y % T + T) % T) * T + ((x % T + T) % T))] += amp * std::exp(-e);
+                }
+        }
+    Image im(Image::ARGB, T, T, true);
+    Image::BitmapData bd(im, Image::BitmapData::writeOnly);
+    const float LX = -0.55f, LY = -0.68f, LZ = 0.48f, ln = std::sqrt(LX * LX + LY * LY + LZ * LZ);
+    const float lx = LX / ln, ly = LY / ln, lz = LZ / ln, k = 0.9f;
+    const float soft = jlimit(0.55f, 1.0f, sc * 0.5f);   /* (at one pixel a unit the bumps are pixels: quieter) */
+    for (int y = 0; y < T; y++)
+        for (int x = 0; x < T; x++) {
+            float dx = h[(size_t)(y * T + (x + 1) % T)] - h[(size_t)(y * T + (x + T - 1) % T)];
+            float dy = h[(size_t)(((y + 1) % T) * T + x)] - h[(size_t)(((y + T - 1) % T) * T + x)];
+            float nx = -dx * k, ny = -dy * k, nl = std::sqrt(nx * nx + ny * ny + 1.0f);
+            float v = (nx * lx + ny * ly + lz) / nl - lz + (rnd.nextFloat() - 0.5f) * 0.05f;
+            Colour c = v > 0.0f ? Colour(0xffe8e6e0).withAlpha(soft * jmin(0.08f, v * 0.22f)) : Colours::black.withAlpha(soft * jmin(0.45f, -v * 0.8f));
+            bd.setPixelColour(x, y, c);
+        }
+    return im;
+}
+
+void drawPanelFace(juce::Graphics &g, juce::Rectangle<float> r, float sc)
+{
+    using namespace juce;
+    /* the steel's black, a little warmer and cooler in large soft patches (the coat thicker and thinner) */
+    g.setColour(Colour(0xff141416));
     g.fillRect(r);
-    Random rnd(seed);
-    for (int i = 0; i < dots; i++) {
+    Random rnd(1923);
+    for (int i = 0; i < (int)(r.getWidth() * r.getHeight() / 30000.0f); i++) {
         float x = r.getX() + rnd.nextFloat() * r.getWidth(), y = r.getY() + rnd.nextFloat() * r.getHeight();
-        g.setColour((rnd.nextBool() ? Colours::white : Colours::black).withAlpha(0.02f + 0.03f * rnd.nextFloat()));
-        g.fillRect(x, y, 1.0f, 1.0f);
+        float s = 40.0f + rnd.nextFloat() * 180.0f;
+        Colour c = rnd.nextFloat() < 0.5f ? Colour(0xff26262a) : Colour(0xff0a0a0b);
+        ColourGradient cg(c.withAlpha(0.08f), x, y, c.withAlpha(0.0f), x + s, y, true);
+        g.setGradientFill(cg);
+        g.fillEllipse(x - s, y - s, s * 2.0f, s * 2.0f);
     }
+    /* the coat, at this density */
+    {
+        auto &cache = get().coat;
+        int key = jlimit(4, 32, (int)std::lround(sc * 4.0f));
+        auto it = cache.find(key);
+        if (it == cache.end())
+            it = cache.emplace(key, makeCoat((float)key / 4.0f)).first;
+        Graphics::ScopedSaveState ss(g);
+        g.reduceClipRegion(r.toNearestInt());
+        float k = 4.0f / (float)key;
+        g.setFillType(FillType(it->second, AffineTransform::scale(k).translated(r.getX(), r.getY())));
+        g.fillRect(r);
+    }
+    /* the light across the sheet: brighter at the upper left, a soft sheen across the middle */
+    g.setGradientFill(ColourGradient(Colours::white.withAlpha(0.035f), r.getX(), r.getY(), Colours::black.withAlpha(0.16f), r.getRight(),
+                                     r.getBottom(), false));
+    g.fillRect(r);
+    ColourGradient sheen(Colours::white.withAlpha(0.0f), r.getX(), r.getY() + r.getHeight() * 0.1f, Colours::white.withAlpha(0.0f),
+                         r.getRight(), r.getBottom(), false);
+    sheen.addColour(0.42, Colours::white.withAlpha(0.025f));
+    g.setGradientFill(sheen);
+    g.fillRect(r);
+}
+
+void drawPanelEdge(juce::Graphics &g, juce::Rectangle<float> r)
+{
+    using namespace juce;
+    for (int i = 0; i < 4; i++) {        /* the sheet's folded edge: lit along the top, in shadow along the bottom */
+        float a = 0.18f - 0.04f * (float)i;
+        auto e = r.reduced((float)i + 0.5f);
+        g.setColour(Colour(0xffdedcd6).withAlpha(a));
+        g.drawLine(e.getX(), e.getY(), e.getRight(), e.getY(), 1.0f);
+        g.setColour(Colours::black.withAlpha(a * 2.4f));
+        g.drawLine(e.getX(), e.getBottom(), e.getRight(), e.getBottom(), 1.0f);
+    }
+}
+
+/* A few years of use, over the print: the coat rubbed glossy round the knobs played most, light scuffs, fine
+ * scratches (most along the hand's way across the panel), a few chips at the edges, the print worn thin in pin-holes.
+ * Gentle: a cared-for instrument, not a relic. px: one screen pixel in panel units (hairlines a pixel wide). Fixed
+ * seeds: the same panel every time. */
+void drawWear(juce::Graphics &g, juce::Rectangle<float> r, float px, const std::vector<juce::Point<float>> &played)
+{
+    using namespace juce;
+    Random rnd(4242);
+    auto P = [&](float mx, float my) { return Point<float>(r.getX() + mx * r.getWidth(), r.getY() + my * r.getHeight()); };
+    /* round the knobs played most: the coat polished in a ring, fine circular scratches from the fingers */
+    for (auto c : played) {
+        float rr = 30.0f + rnd.nextFloat() * 8.0f;
+        ColourGradient cg(Colours::white.withAlpha(0.0f), c.x, c.y, Colours::white.withAlpha(0.0f), c.x + rr * 1.6f, c.y, true);
+        cg.addColour(0.62, Colours::white.withAlpha(0.035f + 0.02f * rnd.nextFloat()));
+        g.setGradientFill(cg);
+        g.fillEllipse(Rectangle<float>(rr * 3.2f, rr * 3.2f).withCentre(c));
+        for (int k = 0; k < 26; k++) {
+            float a0 = rnd.nextFloat() * 6.283f, len = 0.3f + rnd.nextFloat() * 1.1f, rad = rr * (0.85f + rnd.nextFloat() * 0.6f);
+            Path p;
+            p.addCentredArc(c.x, c.y, rad, rad, 0.0f, a0, a0 + len, true);
+            g.setColour(Colour(0xffcfccc4).withAlpha(0.05f + 0.07f * rnd.nextFloat()));
+            g.strokePath(p, PathStrokeType(px));
+        }
+    }
+    /* light scuffs */
+    for (int i = 0; i < 9; i++) {
+        auto c = P(rnd.nextFloat(), rnd.nextFloat());
+        float w = 30.0f + rnd.nextFloat() * 120.0f, h = w * (0.2f + rnd.nextFloat() * 0.3f), ang = rnd.nextFloat() * 3.14f;
+        Graphics::ScopedSaveState s(g);
+        g.addTransform(AffineTransform::rotation(ang, c.x, c.y));
+        float a = 0.025f + 0.04f * rnd.nextFloat();
+        g.setGradientFill(ColourGradient(Colour(0xff8a8780).withAlpha(a), c.x, c.y, Colour(0xff8a8780).withAlpha(0.0f), c.x + w * 0.5f, c.y, true));
+        g.fillEllipse(c.x - w * 0.5f, c.y - h * 0.5f, w, h);
+        for (int k = 0; k < 10; k++) {
+            float yy = c.y + (rnd.nextFloat() - 0.5f) * h * 0.8f, xx = c.x + (rnd.nextFloat() - 0.5f) * w * 0.6f;
+            g.setColour(Colour(0xff9a968c).withAlpha(a * 0.9f));
+            g.drawLine(xx - w * 0.2f, yy, xx + w * 0.2f, yy, px);
+        }
+    }
+    /* fine scratches: a groove's shadow and its lit lip */
+    for (int i = 0; i < 260; i++) {
+        auto a = P(rnd.nextFloat(), rnd.nextFloat());
+        float len = rnd.nextFloat() < 0.85f ? 4.0f + rnd.nextFloat() * 30.0f : 30.0f + rnd.nextFloat() * 120.0f;
+        float ang = rnd.nextFloat() < 0.6f ? -0.3f + rnd.nextFloat() * 0.6f : rnd.nextFloat() * 3.14f;
+        auto b = a + Point<float>(std::cos(ang), std::sin(ang)) * len;
+        Path p;
+        p.startNewSubPath(a);
+        p.quadraticTo((a + b) * 0.5f + Point<float>(rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f) * len * 0.15f, b);
+        float w = px * (1.0f + rnd.nextFloat() * 0.6f);
+        PathStrokeType st(w, PathStrokeType::curved, PathStrokeType::rounded);
+        g.setColour(Colours::black.withAlpha(0.25f));
+        g.strokePath(p, st, AffineTransform::translation(w * 0.7f, w * 0.7f));
+        g.setColour(Colour(0xffc4c1b8).withAlpha(len > 50.0f ? 0.035f + 0.04f * rnd.nextFloat() : 0.05f + 0.1f * rnd.nextFloat()));
+        g.strokePath(p, st);
+    }
+    /* a few chips at the edges, bare steel with a dark lip */
+    for (int i = 0; i < 26; i++) {
+        float t = rnd.nextFloat();
+        int side = rnd.nextInt(2);
+        Point<float> c = side == 0 ? P(t, 0.0f) : P(t, 1.0f);
+        c.y += (side == 0 ? 1.0f : -1.0f) * rnd.nextFloat() * 3.0f;
+        Path chip;
+        int n = 7 + rnd.nextInt(4);
+        float s = 0.8f + rnd.nextFloat() * rnd.nextFloat() * 3.5f;
+        for (int k = 0; k < n; k++) {
+            float a = (float)k / (float)n * 6.283f;
+            auto q = c + Point<float>(std::cos(a), std::sin(a)) * s * (0.45f + rnd.nextFloat() * 0.7f);
+            if (k)
+                chip.lineTo(q);
+            else
+                chip.startNewSubPath(q);
+        }
+        chip.closeSubPath();
+        g.setColour(Colours::black.withAlpha(0.5f));
+        g.strokePath(chip, PathStrokeType(px * 1.4f));
+        g.setGradientFill(ColourGradient(Colour(0xffc8c9c4), c.x - s, c.y - s, Colour(0xff626360), c.x + s, c.y + s, false));
+        g.fillPath(chip);
+    }
+    /* the print worn: pin-holes of the coat over it */
+    const int n = (int)(r.getWidth() * r.getHeight() * 0.0025f / jmax(0.25f, px));
+    for (int i = 0; i < n; i++) {
+        auto c = P(rnd.nextFloat(), rnd.nextFloat());
+        float s = px * (0.8f + rnd.nextFloat() * 1.4f);
+        g.setColour(Colour(0xff141416).withAlpha(0.5f + 0.5f * rnd.nextFloat()));
+        g.fillEllipse(c.x, c.y, s, s * (0.6f + rnd.nextFloat() * 0.8f));
+    }
+}
+
+/* a panel screw: a dome of dull steel, its slot worn a little by screwdrivers */
+void drawScrew(juce::Graphics &g, juce::Point<float> c, float rr)
+{
+    using namespace juce;
+    Random rnd((int64)(c.x * 13.0f + c.y * 7.0f));
+    g.setColour(Colours::black.withAlpha(0.6f));
+    g.fillEllipse(Rectangle<float>(rr * 2.3f, rr * 2.3f).withCentre(c.translated(0.4f, 0.7f)));
+    ColourGradient hg(Colour(0xffd6d3cb), c.x - rr * 0.5f, c.y - rr * 0.6f, Colour(0xff3c3b38), c.x + rr, c.y + rr, true);
+    hg.addColour(0.35, Colour(0xff95928a));
+    g.setGradientFill(hg);
+    g.fillEllipse(Rectangle<float>(rr * 2.0f, rr * 2.0f).withCentre(c));
+    float a = 0.4f + rnd.nextFloat();
+    Path p;
+    p.addRoundedRectangle(-rr * 0.75f, -rr * 0.13f, rr * 1.5f, rr * 0.26f, rr * 0.05f);
+    g.setColour(Colour(0xff121212));
+    g.fillPath(p, AffineTransform::rotation(a).translated(c));
+    g.setColour(Colours::white.withAlpha(0.22f));
+    g.strokePath(p, PathStrokeType(rr * 0.05f), AffineTransform::rotation(a).translated(c.translated(rr * 0.04f, rr * 0.06f)));
 }
 
 void drawWood(juce::Graphics &g, juce::Rectangle<float> r, int seed)
