@@ -760,24 +760,82 @@ void Panel::entryMenu(juce::Rectangle<int> screen)
 
 void Panel::programMenu(juce::Rectangle<int> screen)
 {
+    constexpr int IMPORT = 100000;
     juce::PopupMenu m;
     m.addSectionHeader("FACTORY");
     for (int i = 0; i < NFACTORY; i++)
         m.addItem(i + 1, "F" + juce::String(i + 1).paddedLeft('0', 2) + "   " + proc.getProgramName(i), true, i == proc.getCurrentProgram());
     m.addSectionHeader("YOUR PROGRAMS");
-    for (int i = NFACTORY; i < proc.getNumPrograms(); i++)
-        m.addItem(i + 1, "U" + juce::String(i - NFACTORY + 1).paddedLeft('0', 2) + "   " + proc.getProgramName(i), true,
-                  i == proc.getCurrentProgram());
+    /* the user's own, then each imported bank as a menu of its own (in 128s) */
+    int own = 0;
+    juce::String group;
+    juce::PopupMenu sub;
+    int inSub = 0, part = 0;
+    auto flush = [&] {
+        if (inSub > 0)
+            m.addSubMenu(group + (part > 0 || inSub == 128 ? "  " + juce::String(part * 128 + 1) + "-" + juce::String(part * 128 + inSub) : ""), sub);
+        sub = juce::PopupMenu();
+        inSub = 0;
+    };
+    for (int i = NFACTORY; i < proc.getNumPrograms(); i++) {
+        size_t u = (size_t)(i - NFACTORY);
+        const juce::String &g = proc.userGroup[u];
+        bool cur = i == proc.getCurrentProgram();
+        if (g.isEmpty()) {
+            m.addItem(i + 1, "U" + juce::String(++own).paddedLeft('0', 2) + "   " + proc.getProgramName(i), true, cur);
+            continue;
+        }
+        if (g != group) {
+            flush();
+            group = g;
+            part = 0;
+        } else if (inSub == 128) {
+            flush();
+            part++;
+        }
+        sub.addItem(i + 1, juce::String(part * 128 + inSub + 1).paddedLeft('0', 3) + "   " + proc.getProgramName(i), true, cur);
+        inSub++;
+    }
+    flush();
     if (proc.userPrograms.empty())
         m.addItem(-1, "(WRITE keeps the sound as a program of your own)", false, false);
+    m.addSeparator();
+    m.addItem(IMPORT, "Import Rev2 SysEx file (.syx)...");
     juce::Component::SafePointer<Panel> self(this);
     m.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(screen).withMinimumWidth(260), [self](int r) {
-        if (self && r > 0) {
+        if (self && r == IMPORT) {
+            self->importDialog();
+        } else if (self && r > 0) {
             self->proc.setCurrentProgram(r - 1);
             self->shownParam = -1;
             self->shownGlobal = nullptr;
             self->page = P_HOME;
         }
+    });
+}
+
+void Panel::importDialog()
+{
+    chooser = std::make_unique<juce::FileChooser>("Import Rev2 programs (SysEx)",
+                                                  juce::File::getSpecialLocation(juce::File::userHomeDirectory), "*.syx;*.SYX");
+    juce::Component::SafePointer<Panel> self(this);
+    chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [self](const juce::FileChooser &fc) {
+        if (!self)
+            return;
+        auto f = fc.getResult();
+        if (f == juce::File())
+            return;
+        int n = self->proc.importRev2(f);
+        juce::String msg = n > 0 ? juce::String(n) + " programs imported. They are under YOUR PROGRAMS, in \"" +
+                                       juce::File::createLegalFileName(f.getFileNameWithoutExtension()) + "\"."
+                                 : juce::String("No Rev2 programs found in this file.");
+        juce::AlertWindow::showAsync(juce::MessageBoxOptions()
+                                         .withIconType(juce::MessageBoxIconType::NoIcon)
+                                         .withTitle("IMPORT")
+                                         .withMessage(msg)
+                                         .withButton("OK")
+                                         .withAssociatedComponent(self.getComponent()),
+                                     nullptr);
     });
 }
 

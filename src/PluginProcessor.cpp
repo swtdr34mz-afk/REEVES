@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 swtdr34mz (REEVES) */
 #include "PluginProcessor.h"
+#include "Rev2Syx.h"
 #include "PluginEditor.h"
 
 using namespace rv;
@@ -236,15 +237,53 @@ bool ReevesProcessor::programFromXml(const juce::XmlElement &x, Program &p)
 void ReevesProcessor::loadUserPrograms()
 {
     userPrograms.clear();
-    auto files = programFolder().findChildFiles(juce::File::findFiles, false, "*.reeves");
-    files.sort();
-    for (auto &f : files)
-        if (auto xml = juce::XmlDocument::parse(f))
-            if (xml->hasTagName("REEVESPROGRAM")) {
-                Program p;
-                if (programFromXml(*xml, p))
-                    userPrograms.push_back(p);
-            }
+    userGroup.clear();
+    auto folder = programFolder();
+    auto load = [&](const juce::File &dir, const juce::String &group) {
+        auto files = dir.findChildFiles(juce::File::findFiles, false, "*.reeves");
+        files.sort();
+        for (auto &f : files)
+            if (auto xml = juce::XmlDocument::parse(f))
+                if (xml->hasTagName("REEVESPROGRAM")) {
+                    Program p;
+                    if (programFromXml(*xml, p)) {
+                        userPrograms.push_back(p);
+                        userGroup.push_back(group);
+                    }
+                }
+    };
+    load(folder, {});                    /* the user's own first, then each imported bank */
+    auto dirs = folder.findChildFiles(juce::File::findDirectories, false);
+    dirs.sort();
+    for (auto &d : dirs)
+        load(d, d.getFileName());
+}
+
+int ReevesProcessor::importRev2(const juce::File &syx)
+{
+    juce::MemoryBlock mb;
+    if (!syx.loadFileAsData(mb) || mb.getSize() == 0)
+        return 0;
+    auto found = rev2ReadSyx((const uint8_t *)mb.getData(), mb.getSize());
+    if (found.empty())
+        return 0;
+    auto dir = programFolder().getChildFile(juce::File::createLegalFileName(syx.getFileNameWithoutExtension()));
+    dir.createDirectory();
+    int n = 0, k = 0;
+    for (auto &r : found) {
+        /* the file named after its place on the Rev2 (bank 1-4, program 0-127), so the bank keeps its order */
+        juce::String at = r.bank >= 0 ? juce::String(r.bank + 1) + "-" + juce::String(r.number).paddedLeft('0', 3)
+                                      : "E-" + juce::String(k).paddedLeft('0', 3);
+        k++;
+        juce::XmlElement xml("REEVESPROGRAM");
+        programToXml(r.program, xml);
+        auto f = dir.getChildFile(juce::File::createLegalFileName(at + " " + juce::String(r.program.name)) + ".reeves");
+        if (xml.writeTo(f))
+            n++;
+    }
+    loadUserPrograms();
+    updateHostDisplay(ChangeDetails().withProgramChanged(true));
+    return n;
 }
 
 int ReevesProcessor::writeProgram(const juce::String &name)

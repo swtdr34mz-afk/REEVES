@@ -67,7 +67,8 @@ target_sources(Reeves PRIVATE
     src/ui/Look.cpp
     dsp/Engine.cpp
     dsp/Params.cpp
-    dsp/Presets.cpp)
+    dsp/Presets.cpp
+    dsp/Rev2Syx.cpp)
 
 target_include_directories(Reeves PRIVATE dsp src)
 
@@ -90,7 +91,7 @@ option(REEVES_SNAPSHOT "build ReevesShot, the editor's picture" OFF)
 if(REEVES_SNAPSHOT)
     juce_add_console_app(ReevesShot PRODUCT_NAME "ReevesShot")
     target_sources(ReevesShot PRIVATE tools/snapshot.cpp src/PluginProcessor.cpp src/PluginEditor.cpp src/ui/Look.cpp
-        dsp/Engine.cpp dsp/Params.cpp dsp/Presets.cpp)
+        dsp/Engine.cpp dsp/Params.cpp dsp/Presets.cpp dsp/Rev2Syx.cpp)
     target_include_directories(ReevesShot PRIVATE dsp src)
     target_compile_definitions(ReevesShot PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_STANDALONE_APPLICATION=1
         JucePlugin_Build_Standalone=0)
