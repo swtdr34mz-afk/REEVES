@@ -1,0 +1,13 @@
+{
+  "id": "reeves",
+  "name": "REEVES",
+  "author": "swtdr34mz",
+  "repo": "swtdr34mz-afk/REEVES",
+  "kind": "instrument",
+  "license": "MPL-2.0",
+  "summary": "A bi-timbral polysynth in the manner of the Sequential Prophet Rev2: two shape-modulated oscillators per voice, sub and noise, sync, a Curtis-style 4-pole / 2-pole low-pass, three DADSR envelopes, four LFOs, eight mod slots, an effect per layer, arp, poly and gated sequencers, unison with chord memory, stack and split, 8 or 16 voices. ECO and HIGH quality. Panel-style touch pages for both layers.",
+  "style": "polysynth",
+  "tags": ["analog-modelling", "polyphonic", "subtractive", "arpeggiator", "sequencer"],
+  "asset_pattern": "REEVES-*-mpc-armv7.zip",
+  "screenshot": "https://raw.githubusercontent.com/swtdr34mz-afk/REEVES/v1.0.0/mpc/catalog/screenshot.png"
+}

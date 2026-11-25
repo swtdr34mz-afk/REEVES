@@ -8,7 +8,7 @@
  *              modes, each oscillator its own rate), KEY ON/OFF and NOTE RESET per oscillator
  *   filter     a Curtis-style low-pass, 4-pole (24 dB, four saturating OTA stages, self-oscillating) or 2-pole (12 dB, a
  *              state-variable), at 4x (HIGH) or 2x (ECO), with AUDIO MOD (oscillator 1 into the cutoff, per sample)
- *   envelopes  three DADSR (LPF, VCA, AUX with REPEAT), the Rev2.s digital shapes: a straight attack, curved decay
+ *   envelopes  three DADSR (LPF, VCA, AUX with REPEAT), the Rev2's digital shapes: a straight attack, curved decay
  *              and release
  *   modulation four LFOs per voice (free or KEY SYNC, CLK SYNC), eight mod slots of 22 sources and 53 destinations,
  *              the dedicated mod wheel, pressure, breath, velocity and foot routes, the gated sequencer's four tracks
