@@ -167,12 +167,11 @@ private:
     float ctl[6] = {};                           /* the same, gliding (chunk) */
     float dcR = 0.999f;
     bool susOn = false, holdOn = false;
-    bool hostPlaying = false, hostSync = true, hostWasPlaying = false;
+    bool hostPlaying = false, hostSync = true;
     double hostPpq = 0.0, hostBpm = 120.0;
     float bufL[2][CH] = {}, bufR[2][CH] = {};
     float outL[CH] = {}, outR[CH] = {};
     int gpos = CH;
-    float sumLvl = 0;
 
     /* parts */
     int cap(int layer) const;
