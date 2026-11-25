@@ -1304,11 +1304,16 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
                 a1 = f4(a1, g, k);
                 b0 = f4(b0, g, k);
                 b1 = f4(b1, g, k);
-                y = v.os1.down(v.os2.down(a0, a1), v.os2.down(b0, b1));
+                /* (one after the other: in one expression the compiler may run the second first, MSVC does) */
+                float da = v.os2.down(a0, a1);
+                float db = v.os2.down(b0, b1);
+                y = v.os1.down(da, db);
             } else if (os == 2) {
                 float a, b;
                 v.os1.up(x, a, b);
-                y = v.os1.down(f4(a, g, k), f4(b, g, k));
+                float fa = f4(a, g, k);
+                float fb = f4(b, g, k);
+                y = v.os1.down(fa, fb);
             } else
                 y = f4(x, g, k);
             y *= 1.0f + 0.45f * k;               /* (the bass the resonance takes, partly given back) */
@@ -1323,11 +1328,16 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
                 a1 = f2(a1, g, kd);
                 b0 = f2(b0, g, kd);
                 b1 = f2(b1, g, kd);
-                y = v.os1.down(v.os2.down(a0, a1), v.os2.down(b0, b1));
+                /* (one after the other: in one expression the compiler may run the second first, MSVC does) */
+                float da = v.os2.down(a0, a1);
+                float db = v.os2.down(b0, b1);
+                y = v.os1.down(da, db);
             } else if (os == 2) {
                 float a, b;
                 v.os1.up(x, a, b);
-                y = v.os1.down(f2(a, g, kd), f2(b, g, kd));
+                float fa = f2(a, g, kd);
+                float fb = f2(b, g, kd);
+                y = v.os1.down(fa, fb);
             } else
                 y = f2(x, g, kd);
             y *= 1.0f / (1.0f + 0.6f * res);
