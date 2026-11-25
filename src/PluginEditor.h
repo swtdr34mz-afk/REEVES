@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 swtdr34mz (REEVES) */
-/* The editor: a Prophet Rev2's front panel, drawn at 1860 x 570 and scaled to the window (drag the corner). Its two
- * rows of sections as on the Rev2 (MODULATION, CLOCK, ARP, SEQUENCER, the display with PARAMETER and VALUE,
- * PROGRAM and BANK, EFFECT, AUXILIARY ENVELOPE; LOW FREQUENCY OSCILLATORS, OSCILLATORS, LOW-PASS FILTER, AMPLIFIER),
- * the wheels, GLIDE, UNISON, HOLD, TRANSPOSE, the layer buttons, and REEVES' own VOICES (8 or 16) and HOST SYNC,
- * over a five-octave keyboard.
+/* The editor: the Prophet Rev2 desktop module's front panel, drawn at 1625 x 630 and scaled to the window (drag the
+ * corner). Its top strip (MASTER VOLUME, MODULATION, RATE/TIME, GLIDE, UNISON, HOLD, MISC PARAMS, the display with
+ * PARAMETER, VALUE, PROGRAM and BANK, the program and layer buttons, the name with REEVES' own VOICES (8 or 16) and
+ * HOST SYNC under it), then LOW FREQUENCY OSCILLATORS, CLOCK, ARP, SEQUENCER, EFFECT, AUXILIARY ENVELOPE, then
+ * OSCILLATORS, LOW-PASS FILTER, AMPLIFIER. No keys: played from MIDI (the standalone app: a MIDI keyboard).
  *
  * The OLED works as the Rev2's: it shows what was touched last; MISC PARAMS, the modulation's SOURCE and
  * DESTINATION, the ARP's MODE, the sequencer's MODE, DESTINATION and RECORD and GLOBAL open their pages, PARAMETER
@@ -17,7 +17,7 @@
 class ReevesPanel : public juce::Component, private juce::Timer
 {
 public:
-    static constexpr int W = 1860, H = 570;
+    static constexpr int W = 1625, H = 630;
     explicit ReevesPanel(ReevesProcessor &);
     ~ReevesPanel() override;
     void paint(juce::Graphics &) override;

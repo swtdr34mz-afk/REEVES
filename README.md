@@ -46,7 +46,7 @@ Trotzdem ausführen*.
 
 ## The panel
 
-As on the Rev2: the display shows what was touched last. **MISC PARAMS**, the modulation's **SOURCE** /
+The panel is the Rev2 desktop module's (no keys: play it from a MIDI keyboard or the DAW). As on the Rev2: the display shows what was touched last. **MISC PARAMS**, the modulation's **SOURCE** /
 **DESTINATION**, the ARP's **MODE**, the sequencer's **MODE** / **DESTINATION** / **RECORD** and **Global** open
 their pages; **PARAMETER** picks a line, **VALUE** sets it. With the mouse: the wheel over the display is VALUE, a click
 on it picks from a list (or a program), the gated sequencer's steps are drawn with the mouse. **SELECT** in

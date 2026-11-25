@@ -8,9 +8,8 @@ using Panel = ReevesPanel;
 
 namespace
 {
-constexpr float KD = 41.0f;                      /* a knob's size */
-constexpr float BW = 26.0f, BH = 15.0f;          /* a button's */
-const juce::Rectangle<float> OLED_R{922.0f, 70.0f, 100.0f, 82.0f};
+constexpr float KD = 48.0f;                      /* a knob's size */
+constexpr float BW = 30.0f, BH = 17.0f;          /* a button's */
 
 /* ------------------------------------------------------------------------------- a knob --- */
 /* a parameter's knob (target: which, now: the LFO or the layer chosen), or an endless encoder (onTurn) */
@@ -243,98 +242,6 @@ private:
     std::vector<float> shown;
 };
 
-/* ------------------------------------------------------------------- the wheels, the keys --- */
-class Wheel : public juce::Component
-{
-public:
-    Wheel(bool spring, std::function<void(float)> send) : spring(spring), send(std::move(send)) { pos = spring ? 0.5f : 0.0f; }
-    void paint(juce::Graphics &g) override
-    {
-        using namespace juce;
-        auto well = getLocalBounds().toFloat();
-        g.setColour(Colour(0xff030303));
-        g.fillRoundedRectangle(well, 3.0f);
-        auto wheel = well.reduced(4.0f, 6.0f);
-        float h = wheel.getHeight();
-        for (float y = 0.0f; y < h; y += 1.0f) {
-            float t = (y / h) * 2.0f - 1.0f, shade = std::sqrt(jmax(0.0f, 1.0f - t * t));
-            float rib = std::fmod((std::asin(jlimit(-1.0f, 1.0f, t)) * 9.0f + pos * 18.0f) + 100.0f, 1.0f);
-            float v = 0.05f + 0.22f * shade * (rib < 0.5f ? 1.0f : 0.5f);
-            g.setColour(Colour::fromFloatRGBA(v, v, v * 1.02f, 1.0f));
-            g.fillRect(wheel.getX(), wheel.getY() + y, wheel.getWidth(), 1.0f);
-        }
-        g.setColour(Colours::black);
-        g.drawRect(wheel, 1.0f);
-    }
-    void mouseDown(const juce::MouseEvent &e) override
-    {
-        start = pos;
-        startY = e.position.y;
-    }
-    void mouseDrag(const juce::MouseEvent &e) override
-    {
-        set(juce::jlimit(0.0f, 1.0f, start - (e.position.y - startY) / ((float)getHeight() * 0.8f)));
-    }
-    void mouseUp(const juce::MouseEvent &) override
-    {
-        if (spring)
-            set(0.5f);
-    }
-
-private:
-    void set(float p)
-    {
-        if (p == pos)
-            return;
-        pos = p;
-        send(p);
-        repaint();
-    }
-    bool spring;
-    std::function<void(float)> send;
-    float pos, start = 0.0f, startY = 0.0f;
-};
-
-class Keys : public juce::MidiKeyboardComponent
-{
-public:
-    explicit Keys(juce::MidiKeyboardState &s) : MidiKeyboardComponent(s, horizontalKeyboard)
-    {
-        setBlackNoteLengthProportion(0.62f);
-        setBlackNoteWidthProportion(0.58f);
-        setWantsKeyboardFocus(false);
-        setMouseClickGrabsKeyboardFocus(false);
-        setScrollButtonsVisible(false);
-        setColour(whiteNoteColourId, juce::Colour(0xff0c0c0d));
-        setColour(shadowColourId, juce::Colours::transparentBlack);
-    }
-    void drawWhiteNote(int, juce::Graphics &g, juce::Rectangle<float> a, bool down, bool, juce::Colour, juce::Colour) override
-    {
-        using namespace juce;
-        auto r = a.reduced(1.0f, 0.0f);
-        float lip = down ? 3.0f : 9.0f;
-        g.setGradientFill(ColourGradient(down ? Colour(0xffdedcd6) : Colour(0xfffbfaf7), r.getX(), r.getY(),
-                                         down ? Colour(0xffcfccc5) : Colour(0xffeceae5), r.getX(), r.getBottom(), false));
-        g.fillRect(r.withTrimmedBottom(lip));
-        g.setGradientFill(ColourGradient(Colour(0xffd6d4cd), r.getX(), r.getBottom() - lip, Colour(0xffadaba4), r.getX(), r.getBottom(), false));
-        g.fillRect(r.withTop(r.getBottom() - lip));
-        g.setGradientFill(ColourGradient(Colours::black.withAlpha(0.5f), r.getX(), r.getY(), Colours::transparentBlack, r.getX(), r.getY() + 16.0f, false));
-        g.fillRect(r.withHeight(16.0f));
-    }
-    void drawBlackNote(int, juce::Graphics &g, juce::Rectangle<float> a, bool down, bool, juce::Colour) override
-    {
-        using namespace juce;
-        g.setColour(Colours::black.withAlpha(0.5f));
-        g.fillRect(a.translated(2.0f, 3.0f));
-        g.setColour(Colour(0xff030303));
-        g.fillRect(a);
-        auto top = a.reduced(a.getWidth() * 0.12f, 0.0f).withTrimmedBottom(down ? a.getHeight() * 0.05f : a.getHeight() * 0.11f);
-        g.setGradientFill(ColourGradient(Colour(0xff161618), top.getX(), top.getY(), Colour(0xff2a2a2d), top.getX(), top.getBottom(), false));
-        g.fillRect(top);
-        g.setColour(Colours::white.withAlpha(0.14f));
-        g.fillRect(top.withWidth(1.5f).translated(1.0f, 0.0f));
-    }
-};
 } // namespace
 
 /* ---------------------------------------------------------------------------------- OLED --- */
@@ -846,27 +753,44 @@ void Panel::writeDialog()
 }
 
 /* ------------------------------------------------------------------------------- the build --- */
+/* the panel's places, in the Rev2 desktop module's own layout (its photo's pixels, 1.3 times) */
+static float X(float px) { return px * 1.3f; }
+static float Y(float py) { return py * 1.3f - 12.0f; }
+static juce::Point<float> at(float px, float py) { return {X(px), Y(py)}; }
+
 void Panel::build()
 {
     using juce::Rectangle;
     auto P = [this](int p) { return [this, p]() -> juce::RangedAudioParameter * { return proc.lp(layer(), p); }; };
     auto touchP = [this](int p) { return [this, p](juce::RangedAudioParameter *) { touch(layer(), p); }; };
-    auto knob = [&](float cx, float cy, int p) {
+    auto place = [](juce::Component *c, float px, float py, float w, float h) {
+        c->setBounds(Rectangle<float>(w, h).withCentre(at(px, py)).toNearestInt());
+    };
+    auto knob = [&](float px, float py, int p) {
         auto *k = add<Knob>(*this, P(p), touchP(p));
-        k->setBounds(Rectangle<float>(KD, KD).withCentre({cx, cy}).toNearestInt());
+        place(k, px, py, KD, KD);
         return k;
     };
-    /* the LFO's knobs: the selected LFO's */
-    auto lknob = [&](float cx, float cy, int off) {
+    auto lknob = [&](float px, float py, int off) {
         auto *k = add<Knob>(*this, [this, off]() -> juce::RangedAudioParameter * { return proc.lp(layer(), L_LFO1 + lfoSel * LFO_N + off); },
                             [this, off](juce::RangedAudioParameter *) { touch(layer(), L_LFO1 + lfoSel * LFO_N + off); });
-        k->setBounds(Rectangle<float>(KD, KD).withCentre({cx, cy}).toNearestInt());
+        place(k, px, py, KD, KD);
         return k;
     };
-    auto button = [&](float cx, float cy, std::function<void()> press, std::function<bool()> on) {
+    auto encoder = [&](float px, float py, std::function<void(int)> f) {
+        auto *k = add<Knob>(*this, std::move(f));
+        place(k, px, py, KD, KD);
+        return k;
+    };
+    auto button = [&](float px, float py, std::function<void()> press, std::function<bool()> on) {
         auto *b = add<Btn>(std::move(press), std::move(on));
-        b->setBounds(Rectangle<float>(BW, BH).withCentre({cx, cy}).toNearestInt());
+        place(b, px, py, BW, BH);
         return b;
+    };
+    auto leds = [&](float px, float py0, int n, float step, std::function<float(int)> lv, std::function<void(int)> pick = {}) {
+        auto *l = add<Leds>(n, std::move(lv), std::move(pick));
+        l->setBounds((int)(X(px) - 6.0f), (int)(Y(py0) - step * 0.5f), 12, (int)(step * (float)n));
+        return l;
     };
     auto toggle = [this](int p) {
         return [this, p] {
@@ -876,15 +800,40 @@ void Panel::build()
     };
     auto isOn = [this](int p) { return [this, p] { return proc.value(layer(), p) != 0; }; };
     auto glob = [this](const char *id) { return proc.apvts.getParameter(id); };
+    auto globToggle = [this, glob](const char *id) {
+        return [this, glob, id] {
+            auto *q = glob(id);
+            q->beginChangeGesture();
+            q->setValueNotifyingHost(q->getValue() > 0.5f ? 0.0f : 1.0f);
+            q->endChangeGesture();
+            touchGlobal(q);
+        };
+    };
 
-    /* the left: MASTER VOLUME, RATE/TIME and GLIDE, UNISON and HOLD, TRANSPOSE, the wheels */
+    /* the top: MASTER VOLUME; MODULATION; RATE/TIME, GLIDE, UNISON, HOLD */
     {
         auto *k = add<Knob>(*this, [glob] { return glob("volume"); }, [this](juce::RangedAudioParameter *q) { touchGlobal(q); });
-        k->setBounds(Rectangle<float>(KD, KD).withCentre({318.0f, 92.0f}).toNearestInt());
-        auto *g = knob(282.0f, 175.0f, L_O1_GLIDE);
+        place(k, 85, 100, KD, KD);
+        auto modPick = [this](int off) {
+            return [this, off] {
+                openPage(P_MOD, off == MOD_SRC ? 1 : 2);
+                if (oledView)
+                    entryMenu(oledView->getScreenBounds());
+            };
+        };
+        button(157, 85, modPick(MOD_SRC), [this] { return page == P_MOD && item == 1; });
+        button(157, 147, modPick(MOD_DST), [this] { return page == P_MOD && item == 2; });
+        encoder(233, 83, [this](int d) {
+            modSlot = juce::jlimit(0, 7, modSlot + d);
+            openPage(P_MOD, 0);
+        });
+        auto *amt = add<Knob>(*this, [this]() -> juce::RangedAudioParameter * { return proc.lp(layer(), L_MOD1 + modSlot * MOD_N + MOD_AMT); },
+                              [this](juce::RangedAudioParameter *) { openPage(P_MOD, 3); });
+        place(amt, 233, 148, KD, KD);
+        auto *g = knob(322, 80, L_O1_GLIDE);
         g->afterSet = [this](int v) { proc.setValue(layer(), L_O2_GLIDE, v); };
-        button(345.0f, 168.0f, toggle(L_GLIDE), isOn(L_GLIDE));
-        button(282.0f, 232.0f,
+        button(392, 77, toggle(L_GLIDE), isOn(L_GLIDE));
+        button(320, 145,
                [this] {
                    int l = layer();
                    bool on = proc.value(l, L_UNISON) != 0;
@@ -894,65 +843,102 @@ void Panel::build()
                    touch(l, L_UNISON);
                },
                isOn(L_UNISON));
-        button(345.0f, 232.0f, [this] { proc.command(ReevesProcessor::C_HOLD, 0, 0, 0, proc.holdNow.load() ? 0 : 1); },
+        button(392, 145, [this] { proc.command(ReevesProcessor::C_HOLD, 0, 0, 0, proc.holdNow.load() ? 0 : 1); },
                [this] { return proc.holdNow.load(); });
-        auto *tl = add<Leds>(5, [this](int i) { return (int)std::lround(proc.apvts.getRawParameterValue("transpose")->load()) == i - 2 ? 1.0f : 0.0f; },
-                             [this, glob](int i) {
-                                 auto *q = glob("transpose");
-                                 q->beginChangeGesture();
-                                 q->setValueNotifyingHost(q->convertTo0to1((float)(i - 2)));
-                                 q->endChangeGesture();
-                             },
-                             true);
-        tl->setBounds(272, 276, 84, 12);
-        auto tr = [this, glob](int d) {
-            return [this, glob, d] {
-                auto *q = glob("transpose");
-                int v = juce::jlimit(-2, 2, (int)std::lround(q->convertFrom0to1(q->getValue())) + d);
-                q->beginChangeGesture();
-                q->setValueNotifyingHost(q->convertTo0to1((float)v));
-                q->endChangeGesture();
-                touchGlobal(q);
-            };
-        };
-        button(282.0f, 300.0f, tr(-1), [] { return false; });
-        button(345.0f, 300.0f, tr(1), [] { return false; });
-        auto *pw = add<Wheel>(true, [this](float v) {
-            proc.uiMidi.addMessageToQueue(juce::MidiMessage::pitchWheel(1, juce::jlimit(0, 16383, (int)std::lround(v * 16383.0f)))
-                                              .withTimeStamp(juce::Time::getMillisecondCounterHiRes() * 0.001));
+    }
+    /* the display: MISC PARAMS, PARAMETER and VALUE, the OLED, PROGRAM and BANK */
+    {
+        button(468, 110, [this] { openPage(page == P_MISC ? P_HOME : P_MISC); }, [this] { return page == P_MISC; });
+        encoder(545, 82, [this](int d) { parameterTurn(d); });
+        encoder(545, 150, [this](int d) { valueTurn(d); });
+        auto *o = add<Oled>(*this);
+        o->setBounds(Rectangle<float>(X(588), Y(66), X(683) - X(588), Y(146) - Y(66)).toNearestInt());
+        oledView = o;
+        encoder(708, 82, [this](int d) {
+            int n = proc.getNumPrograms();
+            proc.setCurrentProgram(((proc.getCurrentProgram() + d) % n + n) % n);
+            shownParam = -1;
+            shownGlobal = nullptr;
+            page = P_HOME;
         });
-        pw->setBounds(84, 168, 34, 132);
-        auto *mw = add<Wheel>(false, [this](float v) {
-            proc.uiMidi.addMessageToQueue(juce::MidiMessage::controllerEvent(1, 1, juce::jlimit(0, 127, (int)std::lround(v * 127.0f)))
-                                              .withTimeStamp(juce::Time::getMillisecondCounterHiRes() * 0.001));
+        encoder(708, 150, [this](int d) {
+            int cur = proc.getCurrentProgram(), n = proc.getNumPrograms();
+            if (d > 0 && cur < NFACTORY && n > NFACTORY)
+                proc.setCurrentProgram(NFACTORY);
+            else if (d < 0 && cur >= NFACTORY)
+                proc.setCurrentProgram(0);
+            shownParam = -1;
+            page = P_HOME;
         });
-        mw->setBounds(150, 168, 34, 132);
+    }
+    /* Write, Compare, Global; Split A|B, Stack A+B, Edit Layer B */
+    button(773, 85, [this] { writeDialog(); }, [] { return false; });
+    button(833, 85, [this] { proc.setCompare(!proc.compare); }, [this] { return proc.compare; });
+    button(895, 85, [this] { openPage(page == P_GLOBAL ? P_HOME : P_GLOBAL); }, [this] { return page == P_GLOBAL; });
+    button(773, 138, [this] { proc.setProgValue(G_LAYER_MODE, proc.progValue(G_LAYER_MODE) == LM_SPLIT ? LM_SINGLE : LM_SPLIT); },
+           [this] { return proc.progValue(G_LAYER_MODE) == LM_SPLIT; });
+    button(833, 138, [this] { proc.setProgValue(G_LAYER_MODE, proc.progValue(G_LAYER_MODE) == LM_STACK ? LM_SINGLE : LM_STACK); },
+           [this] { return proc.progValue(G_LAYER_MODE) == LM_STACK; });
+    button(895, 138, [this] { proc.editLayer = proc.editLayer.load() ? 0 : 1; }, [this] { return proc.editLayer.load() != 0; });
+    /* REEVES' own, under the name: VOICES (8 or 16), HOST SYNC, the voices playing */
+    {
+        button(950, 156, globToggle("voices"), [] { return false; });
+        leds(970, 151, 2, 13.0f, [this](int i) { return (proc.apvts.getRawParameterValue("voices")->load() > 0.5f) == (i == 1) ? 1.0f : 0.0f; },
+             [this, glob](int i) {
+                 auto *q = glob("voices");
+                 q->beginChangeGesture();
+                 q->setValueNotifyingHost(i ? 1.0f : 0.0f);
+                 q->endChangeGesture();
+                 touchGlobal(q);
+             });
+        button(1045, 156, globToggle("host_sync"), [this] { return proc.apvts.getRawParameterValue("host_sync")->load() > 0.5f; });
+        auto *act = add<Leds>(16, [this](int i) {
+            int n = proc.apvts.getRawParameterValue("voices")->load() > 0.5f ? 16 : 8;
+            return i >= n ? 0.0f : std::sqrt(proc.voiceLevel[i].load());
+        },
+                              std::function<void(int)>(), true);
+        act->setBounds(Rectangle<float>(X(1190) - X(1100), 8.0f).withCentre(at(1145, 178)).toNearestInt());
     }
 
-    /* MODULATION: SOURCE and DESTINATION (the slot's, as a menu and on the display), SELECT (the slot), AMOUNT */
+    /* LOW FREQUENCY OSCILLATORS */
     {
-        auto modPick = [this](int off) {
+        const float by[4] = {205, 237, 268, 300};
+        for (int k = 0; k < 4; k++)
+            button(85, by[k], [this, k] { lfoSel = k; }, [this, k] { return lfoSel == k; });
+        auto *al = add<Leds>(4, [this](int k) {
+            int l = layer();
+            if (proc.value(l, L_LFO1 + k * LFO_N + LFO_AMT) == 0)
+                return 0.0f;
+            return std::fabs(proc.lfoNow[l][k].load());
+        });
+        al->setBounds((int)X(105) - 6, (int)Y(205) - 20, 12, (int)(Y(300) - Y(205)) + 40);
+        button(128, 222,
+               [this] {
+                   int l = layer(), p = L_LFO1 + lfoSel * LFO_N + LFO_SHAPE;
+                   proc.setValue(l, p, (proc.value(l, p) + 1) % NLFOSHAPE);
+                   touch(l, p);
+               },
+               [] { return false; });
+        leds(152, 199, NLFOSHAPE, 12.0f, [this](int i) { return proc.value(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE) == i ? 1.0f : 0.0f; },
+             [this](int i) { proc.setValue(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE, i); });
+        lknob(222, 225, LFO_FREQ);
+        lknob(145, 292, LFO_DEST);
+        lknob(222, 292, LFO_AMT);
+        auto lt = [this](int off) {
             return [this, off] {
-                openPage(P_MOD, off == MOD_SRC ? 1 : 2);
-                if (oledView)
-                    entryMenu(oledView->getScreenBounds());
+                int l = layer(), p = L_LFO1 + lfoSel * LFO_N + off;
+                proc.setValue(l, p, proc.value(l, p) ? 0 : 1);
+                touch(l, p);
             };
         };
-        button(413.0f, 100.0f, modPick(MOD_SRC), [this] { return page == P_MOD && item == 1; });
-        button(413.0f, 158.0f, modPick(MOD_DST), [this] { return page == P_MOD && item == 2; });
-        auto *sel = add<Knob>(*this, [this](int d) {
-            modSlot = juce::jlimit(0, 7, modSlot + d);
-            openPage(P_MOD, 0);
-        });
-        sel->setBounds(Rectangle<float>(KD, KD).withCentre({467.0f, 90.0f}).toNearestInt());
-        auto *amt = add<Knob>(*this, [this]() -> juce::RangedAudioParameter * { return proc.lp(layer(), L_MOD1 + modSlot * MOD_N + MOD_AMT); },
-                              [this](juce::RangedAudioParameter *) { openPage(P_MOD, 3); });
-        amt->setBounds(Rectangle<float>(KD, KD).withCentre({467.0f, 150.0f}).toNearestInt());
+        auto lo = [this](int off) { return [this, off] { return proc.value(layer(), L_LFO1 + lfoSel * LFO_N + off) != 0; }; };
+        button(268, 222, lt(LFO_CLK), lo(LFO_CLK));
+        button(268, 288, lt(LFO_KEY), lo(LFO_KEY));
     }
     /* CLOCK */
-    knob(522.0f, 90.0f, L_BPM);
-    knob(588.0f, 90.0f, L_DIVIDE);
-    button(558.0f, 158.0f,
+    knob(334, 228, L_BPM);
+    knob(402, 228, L_DIVIDE);
+    button(370, 288,
            [this] {
                double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
                if (!taps.empty() && now - taps.back() > 2.0)
@@ -968,12 +954,12 @@ void Panel::build()
            },
            [this] { return proc.beatLed[layer()].load(); });
     /* ARP */
-    button(652.0f, 100.0f, [this] { openPage(page == P_ARP ? P_HOME : P_ARP); }, [this] { return page == P_ARP; });
-    button(652.0f, 158.0f, toggle(L_ARP_ON), isOn(L_ARP_ON));
+    button(476, 222, [this] { openPage(page == P_ARP ? P_HOME : P_ARP); }, [this] { return page == P_ARP; });
+    button(476, 288, toggle(L_ARP_ON), isOn(L_ARP_ON));
     /* SEQUENCER */
     {
         auto gated = [this] { return proc.value(layer(), L_SEQ_TYPE) == ST_GATED; };
-        button(712.0f, 100.0f,
+        button(543, 222,
                [this, gated] {
                    int l = layer();
                    if (proc.value(l, L_SEQ_ON) && !gated())
@@ -982,17 +968,17 @@ void Panel::build()
                    touch(l, L_SEQ_TYPE);
                },
                [] { return false; });
-        auto *tl = add<Leds>(2, [this](int i) { return (proc.value(layer(), L_SEQ_TYPE) == ST_POLY) == (i == 1) ? 1.0f : 0.0f; },
-                             [this](int i) { proc.setValue(layer(), L_SEQ_TYPE, i ? ST_POLY : ST_GATED); });
-        tl->setBounds(733, 87, 12, 26);
-        button(740.0f, 158.0f, [this] {
-            int l = layer();
-            proc.setValue(l, L_SEQ_ON, proc.value(l, L_SEQ_ON) ? 0 : 1);
-            if (proc.value(l, L_SEQ_TYPE) == ST_POLY)
-                openPage(P_POLYREC);
-        },
+        leds(567, 215, 2, 13.0f, [this](int i) { return (proc.value(layer(), L_SEQ_TYPE) == ST_POLY) == (i == 1) ? 1.0f : 0.0f; },
+             [this](int i) { proc.setValue(layer(), L_SEQ_TYPE, i ? ST_POLY : ST_GATED); });
+        button(573, 288,
+               [this] {
+                   int l = layer();
+                   proc.setValue(l, L_SEQ_ON, proc.value(l, L_SEQ_ON) ? 0 : 1);
+                   if (proc.value(l, L_SEQ_TYPE) == ST_POLY)
+                       openPage(P_POLYREC);
+               },
                isOn(L_SEQ_ON));
-        button(788.0f, 100.0f,
+        button(627, 222,
                [this, gated] {
                    int l = layer();
                    if (gated())
@@ -1001,13 +987,12 @@ void Panel::build()
                        proc.command(ReevesProcessor::C_REST, l);
                },
                [this] { return page == P_GSEQ && item == 0; });
-        auto *trk = add<Knob>(*this, [this](int d) {
+        encoder(682, 225, [this](int d) {
             track = juce::jlimit(0, 3, track + d);
             if (page != P_STEPS)
                 openPage(P_GSEQ, 1 + track);
         });
-        trk->setBounds(Rectangle<float>(KD, KD).withCentre({836.0f, 90.0f}).toNearestInt());
-        button(788.0f, 158.0f,
+        button(627, 288,
                [this, gated] {
                    int l = layer();
                    if (gated())
@@ -1016,7 +1001,7 @@ void Panel::build()
                        proc.command(ReevesProcessor::C_TIE, l);
                },
                [this] { return page == P_GSEQ && item > 0; });
-        button(836.0f, 158.0f,
+        button(682, 288,
                [this, gated] {
                    int l = layer();
                    if (gated())
@@ -1029,195 +1014,70 @@ void Panel::build()
                },
                [this] { return page == P_STEPS || proc.recording[layer()].load(); });
     }
-    /* the display: PARAMETER and VALUE, the OLED, MISC PARAMS, PROGRAM and BANK */
-    {
-        auto *pk = add<Knob>(*this, [this](int d) { parameterTurn(d); });
-        pk->setBounds(Rectangle<float>(KD, KD).withCentre({893.0f, 90.0f}).toNearestInt());
-        auto *vk = add<Knob>(*this, [this](int d) { valueTurn(d); });
-        vk->setBounds(Rectangle<float>(KD, KD).withCentre({893.0f, 150.0f}).toNearestInt());
-        auto *o = add<Oled>(*this);
-        o->setBounds(OLED_R.toNearestInt());
-        oledView = o;
-        button(972.0f, 172.0f, [this] { openPage(page == P_MISC ? P_HOME : P_MISC); }, [this] { return page == P_MISC; });
-        auto *pg = add<Knob>(*this, [this](int d) {
-            int n = proc.getNumPrograms();
-            proc.setCurrentProgram(((proc.getCurrentProgram() + d) % n + n) % n);
-            shownParam = -1;
-            shownGlobal = nullptr;
-            page = P_HOME;
-        });
-        pg->setBounds(Rectangle<float>(KD, KD).withCentre({1050.0f, 90.0f}).toNearestInt());
-        auto *bk = add<Knob>(*this, [this](int d) {
-            /* BANK: between the factory programs and your own */
-            int cur = proc.getCurrentProgram(), n = proc.getNumPrograms();
-            bool user = cur >= NFACTORY;
-            if (d > 0 && !user && n > NFACTORY)
-                proc.setCurrentProgram(NFACTORY);
-            else if (d < 0 && user)
-                proc.setCurrentProgram(0);
-            shownParam = -1;
-            page = P_HOME;
-        });
-        bk->setBounds(Rectangle<float>(KD, KD).withCentre({1050.0f, 150.0f}).toNearestInt());
-    }
-    /* Global, Write, Compare; Split A|B, Stack A+B, Edit Layer B */
-    button(1104.0f, 96.0f, [this] { openPage(page == P_GLOBAL ? P_HOME : P_GLOBAL); }, [this] { return page == P_GLOBAL; });
-    button(1104.0f, 131.0f, [this] { writeDialog(); }, [] { return false; });
-    button(1104.0f, 166.0f, [this] { proc.setCompare(!proc.compare); }, [this] { return proc.compare; });
-    button(1148.0f, 96.0f, [this] { proc.setProgValue(G_LAYER_MODE, proc.progValue(G_LAYER_MODE) == LM_SPLIT ? LM_SINGLE : LM_SPLIT); },
-           [this] { return proc.progValue(G_LAYER_MODE) == LM_SPLIT; });
-    button(1148.0f, 131.0f, [this] { proc.setProgValue(G_LAYER_MODE, proc.progValue(G_LAYER_MODE) == LM_STACK ? LM_SINGLE : LM_STACK); },
-           [this] { return proc.progValue(G_LAYER_MODE) == LM_STACK; });
-    button(1148.0f, 166.0f, [this] { proc.editLayer = proc.editLayer.load() ? 0 : 1; }, [this] { return proc.editLayer.load() != 0; });
-
     /* EFFECT */
-    button(1215.0f, 100.0f, toggle(L_FX_ON), isOn(L_FX_ON));
-    button(1215.0f, 158.0f, toggle(L_FX_CLK), isOn(L_FX_CLK));
-    knob(1270.0f, 90.0f, L_FX_TYPE);
-    knob(1327.0f, 90.0f, L_FX_MIX);
-    knob(1270.0f, 150.0f, L_FX_P1);
-    knob(1327.0f, 150.0f, L_FX_P2);
+    button(747, 222, toggle(L_FX_ON), isOn(L_FX_ON));
+    button(747, 288, toggle(L_FX_CLK), isOn(L_FX_CLK));
+    knob(815, 225, L_FX_TYPE);
+    knob(880, 225, L_FX_MIX);
+    knob(815, 292, L_FX_P1);
+    knob(880, 292, L_FX_P2);
     /* AUXILIARY ENVELOPE */
     {
         const int top[4] = {L_E3_DEST, L_E3_AMT, L_E3_VEL, L_E3DEL}, bot[4] = {L_E3ATT, L_E3DEC, L_E3SUS, L_E3REL};
         for (int i = 0; i < 4; i++) {
-            knob(1392.0f + 62.0f * (float)i, 90.0f, top[i]);
-            knob(1392.0f + 62.0f * (float)i, 150.0f, bot[i]);
+            knob(955.0f + 70.0f * (float)i, 225, top[i]);
+            knob(955.0f + 70.0f * (float)i, 292, bot[i]);
         }
-    }
-    /* VOICES and HOST SYNC (REEVES' own), the voices' LEDs */
-    {
-        auto *vb = add<Btn>(
-            [this, glob] {
-                auto *q = glob("voices");
-                q->beginChangeGesture();
-                q->setValueNotifyingHost(q->getValue() > 0.5f ? 0.0f : 1.0f);
-                q->endChangeGesture();
-                touchGlobal(q);
-            },
-            [] { return false; });
-        vb->setBounds(Rectangle<float>(BW, BH).withCentre({1648.0f, 92.0f}).toNearestInt());
-        auto *vl = add<Leds>(2, [this](int i) { return (proc.apvts.getRawParameterValue("voices")->load() > 0.5f) == (i == 1) ? 1.0f : 0.0f; },
-                             [this, glob](int i) {
-                                 auto *q = glob("voices");
-                                 q->beginChangeGesture();
-                                 q->setValueNotifyingHost(i ? 1.0f : 0.0f);
-                                 q->endChangeGesture();
-                             });
-        vl->setBounds(1670, 79, 12, 26);
-        auto *sb = add<Btn>(
-            [this, glob] {
-                auto *q = glob("host_sync");
-                q->beginChangeGesture();
-                q->setValueNotifyingHost(q->getValue() > 0.5f ? 0.0f : 1.0f);
-                q->endChangeGesture();
-                touchGlobal(q);
-            },
-            [this] { return proc.apvts.getRawParameterValue("host_sync")->load() > 0.5f; });
-        sb->setBounds(Rectangle<float>(BW, BH).withCentre({1648.0f, 134.0f}).toNearestInt());
-        auto *act = add<Leds>(16, [this](int i) {
-            int n = proc.apvts.getRawParameterValue("voices")->load() > 0.5f ? 16 : 8;
-            if (i >= n)
-                return 0.0f;
-            return std::sqrt(proc.voiceLevel[i].load());
-        },
-                              std::function<void(int)>(), true);
-        act->setBounds(1630, 174, 156, 10);
-    }
-
-    /* LOW FREQUENCY OSCILLATORS */
-    {
-        for (int k = 0; k < 4; k++)
-            button(396.0f, 216.0f + 26.0f * (float)k, [this, k] { lfoSel = k; },
-                   [this, k] { return lfoSel == k; });
-        auto *al = add<Leds>(4, [this](int k) {
-            int l = layer();
-            if (proc.value(l, L_LFO1 + k * LFO_N + LFO_AMT) == 0)
-                return 0.0f;
-            return std::fabs(proc.lfoNow[l][k].load());
-        });
-        al->setBounds(413, 203, 12, 104);
-        button(446.0f, 232.0f,
-               [this] {
-                   int l = layer(), p = L_LFO1 + lfoSel * LFO_N + LFO_SHAPE;
-                   proc.setValue(l, p, (proc.value(l, p) + 1) % NLFOSHAPE);
-                   touch(l, p);
-               },
-               [] { return false; });
-        auto *sl = add<Leds>(NLFOSHAPE, [this](int i) { return proc.value(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE) == i ? 1.0f : 0.0f; },
-                             [this](int i) { proc.setValue(layer(), L_LFO1 + lfoSel * LFO_N + LFO_SHAPE, i); });
-        sl->setBounds(461, 205, 12, 54);
-        lknob(548.0f, 228.0f, LFO_FREQ);
-        lknob(476.0f, 287.0f, LFO_DEST);
-        lknob(548.0f, 287.0f, LFO_AMT);
-        auto lt = [this](int off) {
-            return [this, off] {
-                int l = layer(), p = L_LFO1 + lfoSel * LFO_N + off;
-                proc.setValue(l, p, proc.value(l, p) ? 0 : 1);
-                touch(l, p);
-            };
-        };
-        auto lo = [this](int off) { return [this, off] { return proc.value(layer(), L_LFO1 + lfoSel * LFO_N + off) != 0; }; };
-        button(590.0f, 222.0f, lt(LFO_KEY), lo(LFO_KEY));
-        button(590.0f, 282.0f, lt(LFO_CLK), lo(LFO_CLK));
     }
     /* OSCILLATORS */
     {
-        auto shapeBtn = [&](float cx, float cy, int p) {
-            button(cx, cy,
+        auto shapeBtn = [&](float px, float py, int p) {
+            button(px, py,
                    [this, p] {
                        int l = layer();
                        proc.setValue(l, p, (proc.value(l, p) + 1) % NSHAPE);
                        touch(l, p);
                    },
                    [] { return false; });
-            auto *sl = add<Leds>(4, [this, p](int i) { return proc.value(layer(), p) == i + 1 ? 1.0f : 0.0f; },
-                                 [this, p](int i) {
-                                     int l = layer();
-                                     proc.setValue(l, p, proc.value(l, p) == i + 1 ? 0 : i + 1);
-                                     touch(l, p);
-                                 });
-            sl->setBounds((int)cx + 15, (int)cy - 21, 12, 42);
+            leds(px + 23.0f, py - 17.0f, 4, 12.0f, [this, p](int i) { return proc.value(layer(), p) == i + 1 ? 1.0f : 0.0f; },
+                 [this, p](int i) {
+                     int l = layer();
+                     proc.setValue(l, p, proc.value(l, p) == i + 1 ? 0 : i + 1);
+                     touch(l, p);
+                 });
         };
-        knob(642.0f, 228.0f, L_O1_FREQ);
-        knob(702.0f, 228.0f, L_O1_FINE);
-        shapeBtn(746.0f, 228.0f, L_O1_SHAPE);
-        knob(838.0f, 228.0f, L_O1_SHMOD);
-        knob(894.0f, 228.0f, L_SUB);
-        knob(950.0f, 228.0f, L_NOISE);
-        button(672.0f, 268.0f, toggle(L_SYNC), isOn(L_SYNC));
-        knob(642.0f, 288.0f, L_O2_FREQ);
-        knob(702.0f, 288.0f, L_O2_FINE);
-        shapeBtn(746.0f, 288.0f, L_O2_SHAPE);
-        knob(838.0f, 288.0f, L_O2_SHMOD);
-        knob(894.0f, 288.0f, L_OSC_MIX);
-        knob(950.0f, 288.0f, L_SLOP);
+        knob(85, 378, L_O1_FREQ);
+        knob(152, 378, L_O1_FINE);
+        shapeBtn(205, 370, L_O1_SHAPE);
+        knob(300, 378, L_O1_SHMOD);
+        knob(372, 378, L_SUB);
+        knob(445, 378, L_NOISE);
+        button(122, 413, toggle(L_SYNC), isOn(L_SYNC));
+        knob(85, 440, L_O2_FREQ);
+        knob(152, 440, L_O2_FINE);
+        shapeBtn(205, 432, L_O2_SHAPE);
+        knob(300, 440, L_O2_SHMOD);
+        knob(372, 440, L_OSC_MIX);
+        knob(445, 440, L_SLOP);
     }
     /* LOW-PASS FILTER */
     {
+        const float xs[6] = {520, 590, 662, 735, 808, 880};
         const int top[6] = {L_CUTOFF, L_RESO, L_FENV_AMT, L_FVEL, L_KEYAMT, L_AUDIOMOD};
         for (int i = 0; i < 6; i++)
-            knob(1012.0f + 62.5f * (float)i, 228.0f, top[i]);
-        button(1012.0f, 290.0f, toggle(L_POLE4), isOn(L_POLE4));
+            knob(xs[i], 378, top[i]);
+        button(518, 437, toggle(L_POLE4), isOn(L_POLE4));
         const int bot[5] = {L_FDEL, L_FATT, L_FDEC, L_FSUS, L_FREL};
         for (int i = 0; i < 5; i++)
-            knob(1074.5f + 62.5f * (float)i, 288.0f, bot[i]);
+            knob(xs[i + 1], 440, bot[i]);
     }
     /* AMPLIFIER */
     {
         const int top[4] = {L_PAN_SPREAD, L_AENV_AMT, L_AVEL, L_ADEL}, bot[4] = {L_AATT, L_ADEC, L_ASUS, L_AREL};
         for (int i = 0; i < 4; i++) {
-            knob(1392.0f + 62.0f * (float)i, 228.0f, top[i]);
-            knob(1392.0f + 62.0f * (float)i, 288.0f, bot[i]);
+            knob(955.0f + 70.0f * (float)i, 378, top[i]);
+            knob(955.0f + 70.0f * (float)i, 440, bot[i]);
         }
-    }
-    /* the keyboard: five octaves, C1 .. C6 */
-    {
-        auto *k = add<Keys>(proc.keyboardState);
-        k->setAvailableRange(36, 96);
-        k->setBounds(50, 350, W - 100, H - 356);
-        k->setKeyWidth((float)(W - 100) / 36.0f);
-        k->setOctaveForMiddleC(4);
     }
 }
 
@@ -1226,35 +1086,33 @@ void Panel::paintBackground(juce::Graphics &g)
 {
     using namespace juce;
     auto all = Rectangle<float>(0.0f, 0.0f, (float)W, (float)H);
-    auto face = all.reduced(48.0f, 0.0f).withBottom(345.0f);
-    drawPanelFace(g, face, 12000);
-    g.setColour(Colour(0xff0a0a0b));
-    g.fillRect(all.reduced(48.0f, 0.0f).withTop(345.0f));
-    g.setColour(Colours::black.withAlpha(0.8f));
-    g.fillRect(Rectangle<float>(48.0f, 343.0f, (float)W - 96.0f, 5.0f));
-    drawWood(g, all.withWidth(48.0f), 3);
-    drawWood(g, all.withLeft((float)W - 48.0f), 4);
-    for (float x : {48.0f, (float)W - 48.0f}) {
+    const float cheek = 42.0f;
+    auto face = all.reduced(cheek, 0.0f);
+    drawPanelFace(g, face, 14000);
+    drawWood(g, all.withWidth(cheek), 3);
+    drawWood(g, all.withLeft((float)W - cheek), 4);
+    for (float x : {cheek, (float)W - cheek}) {
         bool left = x < 100.0f;
         g.setGradientFill(ColourGradient(Colours::black.withAlpha(0.55f), x, 0.0f, Colours::transparentBlack, x + (left ? 12.0f : -12.0f), 0.0f, false));
         g.fillRect(left ? Rectangle<float>(x, 0.0f, 12.0f, (float)H) : Rectangle<float>(x - 12.0f, 0.0f, 12.0f, (float)H));
     }
+    auto R = [](float x0, float y0, float x1, float y1) { return Rectangle<float>(X(x0), Y(y0), X(x1) - X(x0), Y(y1) - Y(y0)); };
+    auto C = [](float px, float py, float w, float h) { return Rectangle<float>(w, h).withCentre(at(px, py)); };
 
-    /* the jacks' names along the top, as printed on the Rev2 */
+    /* the jacks' names along the top */
     {
         g.setColour(col::legend.withAlpha(0.85f));
         g.setFont(font(Face::label, 9.5f));
-        const std::pair<float, const char *> J[] = {{405, "Phones"}, {443, "Left"}, {478, "Right"}, {518, "Left"}, {553, "Right"},
-                                                     {795, "Pedal/CV"}, {840, "Sustain"}, {890, "Sequencer"}, {945, "MIDI Thru"},
-                                                     {1000, "MIDI Out"}, {1050, "MIDI In"}, {1092, "USB"}, {1700, "AC In"}, {1760, "On/Off"}};
+        const std::pair<float, const char *> J[] = {{125, "Phones"}, {165, "Left"}, {200, "Right"}, {245, "Left"}, {280, "Right"},
+                                                     {585, "Pedal/CV"}, {628, "Sustain"}, {670, "Sequencer"}, {720, "MIDI Thru"},
+                                                     {775, "MIDI Out"}, {830, "MIDI In"}, {880, "USB"}, {1060, "AC In"}, {1135, "On/Off"}};
         for (auto &j : J)
-            g.drawText(j.second, Rectangle<float>(j.first - 30.0f, 22.0f, 60.0f, 11.0f), Justification::centred, false);
+            g.drawText(j.second, C(j.first, 30, 70, 11), Justification::centred, false);
         g.setFont(font(Face::label, 8.0f));
-        g.drawText("MAIN/A OUTPUT", Rectangle<float>(415.0f, 33.0f, 90.0f, 10.0f), Justification::centred, false);
-        g.drawText("B OUTPUT", Rectangle<float>(500.0f, 33.0f, 70.0f, 10.0f), Justification::centred, false);
+        g.drawText("MAIN/A OUTPUT", C(183, 42, 100, 10), Justification::centred, false);
+        g.drawText("B OUTPUT", C(262, 42, 80, 10), Justification::centred, false);
     }
-
-    /* the name: REEVES, in the Rev2's wide face; under it the voices, outlined (paint()) */
+    /* the name: REEVES, wide (its voices outlined under it: paint()) */
     {
         auto f = font(Face::logo, 44.0f);
         GlyphArrangement ga;
@@ -1262,177 +1120,176 @@ void Panel::paintBackground(juce::Graphics &g)
         Path p;
         ga.createPath(p);
         auto b = p.getBounds();
-        p.applyTransform(AffineTransform::translation(-b.getX(), -b.getY()).scaled(255.0f / b.getWidth(), 34.0f / b.getHeight()).translated(62.0f, 30.0f));
+        auto dst = R(932, 82, 1188, 110);
+        p.applyTransform(AffineTransform::translation(-b.getX(), -b.getY()).scaled(dst.getWidth() / b.getWidth(), dst.getHeight() / b.getHeight())
+                             .translated(dst.getX(), dst.getY()));
         g.setColour(col::legend);
         g.fillPath(p);
     }
-    drawLegend(g, "MASTER VOLUME", Rectangle<float>(268.0f, 116.0f, 100.0f, 14.0f), 10.5f);
-    drawLegend(g, "RATE/TIME", Rectangle<float>(242.0f, 198.0f, 80.0f, 13.0f), 10.5f);
-    drawLegend(g, "GLIDE", Rectangle<float>(315.0f, 179.0f, 60.0f, 13.0f), 10.5f);
-    drawLegend(g, "UNISON", Rectangle<float>(252.0f, 243.0f, 60.0f, 13.0f), 10.5f);
-    drawLegend(g, "HOLD", Rectangle<float>(315.0f, 243.0f, 60.0f, 13.0f), 10.5f);
-    {
-        g.setFont(font(Face::label, 8.5f));
+
+    auto under = [&](float px, float py, const char *t, float size = 10.5f) {
+        auto c = at(px, py);
+        drawLegend(g, t, Rectangle<float>(c.x - 46.0f, c.y + 25.0f, 92.0f, 13.0f), size);
+    };
+    auto underB = [&](float px, float py, const char *t, float size = 10.0f) {
+        auto c = at(px, py);
+        drawLegend(g, t, Rectangle<float>(c.x - 44.0f, c.y + 11.0f, 88.0f, 13.0f), size);
+    };
+    auto small = [&](Rectangle<float> r, const char *t, Justification j = Justification::centredLeft, float size = 9.0f) {
+        g.setFont(font(Face::label, size));
         g.setColour(col::legend);
-        const char *T[5] = {"-2", "-1", "0", "+1", "+2"};
-        for (int i = 0; i < 5; i++)
-            g.drawText(T[i], Rectangle<float>(272.0f + 16.8f * (float)i, 265.0f, 16.8f, 10.0f), Justification::centred, false);
-        drawLegend(g, "Down", Rectangle<float>(262.0f, 309.0f, 40.0f, 11.0f), 9.0f);
-        drawLegend(g, "Up", Rectangle<float>(325.0f, 309.0f, 40.0f, 11.0f), 9.0f);
-        drawLegend(g, "TRANSPOSE", Rectangle<float>(273.0f, 320.0f, 80.0f, 12.0f), 10.0f);
+        g.drawText(t, r, j, false);
+    };
+
+    /* the top row */
+    under(85, 100, "MASTER VOLUME", 10.0f);
+    {
+        /* MODULATION: its name over a line, as on the module */
+        auto f = font(Face::title, 13.0f).withExtraKerningFactor(0.05f);
+        auto r = R(130, 54, 265, 66);
+        float tw = textWidth(f, "MODULATION");
+        g.setColour(col::frame);
+        g.fillRect(Rectangle<float>(r.getX(), r.getCentreY() - 0.8f, (r.getWidth() - tw) * 0.5f - 6.0f, 1.6f));
+        g.fillRect(Rectangle<float>(r.getCentreX() + tw * 0.5f + 6.0f, r.getCentreY() - 0.8f, (r.getWidth() - tw) * 0.5f - 6.0f, 1.6f));
+        g.setColour(col::legend);
+        g.setFont(f);
+        g.drawText("MODULATION", r, Justification::centred, false);
     }
-    drawLegend(g, "PITCH", Rectangle<float>(71.0f, 308.0f, 60.0f, 13.0f), 10.5f);
-    drawLegend(g, "MOD", Rectangle<float>(137.0f, 308.0f, 60.0f, 13.0f), 10.5f);
-    for (auto x : {84.0f, 150.0f}) {
-        g.setColour(Colours::black);
-        g.fillRoundedRectangle(Rectangle<float>(x - 4.0f, 164.0f, 42.0f, 140.0f), 4.0f);
-    }
+    underB(157, 85, "ASSIGN SRC");
+    underB(157, 147, "ASSIGN DEST");
+    under(233, 83, "SELECT");
+    under(233, 148, "AMOUNT");
+    under(322, 80, "RATE/TIME");
+    underB(392, 77, "GLIDE");
+    underB(320, 145, "UNISON");
+    underB(392, 145, "HOLD");
+    small(C(468, 97, 40, 10), "show", Justification::centred, 8.5f);
+    underB(468, 110, "MISC PARAMS", 9.5f);
+    under(545, 82, "PARAMETER");
+    under(545, 150, "VALUE");
+    under(708, 82, "PROGRAM");
+    under(708, 150, "BANK");
+    underB(773, 85, "Write");
+    underB(833, 85, "Compare");
+    underB(895, 85, "Global");
+    underB(773, 138, "Split A|B");
+    underB(833, 138, "Stack A+B");
+    underB(895, 138, "Edit Layer B", 9.5f);
+    underB(950, 156, "VOICES");
+    small(Rectangle<float>(X(980), Y(151) - 11.0f, 60.0f, 11.0f), "8 Voice");
+    small(Rectangle<float>(X(980), Y(151) + 2.0f, 60.0f, 11.0f), "16 Voice");
+    underB(1045, 156, "HOST SYNC");
+    drawTag(g, R(1100, 140, 1190, 172));
 
     /* the sections */
     struct Sec {
-        float x0, x1, y0, y1;
+        float x0, y0, x1, y1;
         const char *t;
     };
-    const Sec S[] = {{386, 496, 63, 190, "MODULATION"},
-                     {503, 616, 63, 190, "CLOCK"},
-                     {623, 681, 63, 190, "ARP"},
-                     {690, 862, 63, 190, "SEQUENCER"},
-                     {1188, 1350, 63, 190, "EFFECT"},
-                     {1362, 1606, 63, 190, "AUXILIARY ENVELOPE"},
-                     {372, 608, 197, 322, "LOW FREQUENCY OSCILLATORS"},
-                     {616, 978, 197, 322, "OSCILLATORS"},
-                     {984, 1352, 197, 322, "LOW-PASS FILTER"},
-                     {1362, 1606, 197, 322, "AMPLIFIER"}};
+    const Sec S[] = {{55, 187, 293, 323, "LOW FREQUENCY OSCILLATORS"},
+                     {305, 187, 435, 323, "CLOCK"},
+                     {447, 187, 505, 323, "ARP"},
+                     {517, 187, 710, 323, "SEQUENCER"},
+                     {722, 187, 908, 323, "EFFECT"},
+                     {920, 187, 1195, 323, "AUXILIARY ENVELOPE"},
+                     {55, 335, 476, 473, "OSCILLATORS"},
+                     {488, 335, 907, 473, "LOW-PASS FILTER"},
+                     {920, 335, 1195, 473, "AMPLIFIER"}};
     for (auto &s : S)
-        drawSection(g, Rectangle<float>(s.x0, s.y0, s.x1 - s.x0, s.y1 - s.y0), s.t);
+        drawSection(g, R(s.x0, s.y0, s.x1, s.y1), s.t);
 
-    auto under = [&](float cx, float cy, const char *t, float size = 10.5f) {
-        drawLegend(g, t, Rectangle<float>(cx - 40.0f, cy + 22.0f, 80.0f, 13.0f), size);
-    };
-    auto underB = [&](float cx, float cy, const char *t, float size = 10.0f) {
-        drawLegend(g, t, Rectangle<float>(cx - 38.0f, cy + 9.0f, 76.0f, 13.0f), size);
-    };
-    under(467, 90, "SELECT");
-    under(467, 150, "AMOUNT");
-    underB(413, 100, "SOURCE");
-    underB(413, 158, "DESTINATION", 9.0f);
-    under(522, 90, "BPM");
-    under(588, 90, "DIVIDE");
-    underB(558, 158, "TAP TEMPO");
-    underB(652, 100, "MODE");
-    underB(652, 158, "ON/OFF");
-    underB(712, 100, "TYPE");
+    /* LFOs */
     {
-        g.setFont(font(Face::label, 9.0f));
+        const float by[4] = {205, 237, 268, 300};
+        g.setFont(font(Face::title, 11.0f));
         g.setColour(col::legend);
-        g.drawText("Gated", Rectangle<float>(744.0f, 87.0f, 40.0f, 12.0f), Justification::centredLeft, false);
-        g.drawText("Poly", Rectangle<float>(744.0f, 100.0f, 40.0f, 12.0f), Justification::centredLeft, false);
-        g.drawRoundedRectangle(Rectangle<float>(730.0f, 100.0f, 40.0f, 13.0f), 5.0f, 1.0f);
-        g.drawArrow(Line<float>(745.0f, 114.0f, 745.0f, 146.0f), 1.0f, 5.0f, 5.0f);
-        g.setFont(font(Face::label, 8.5f));
-        g.drawText("rest", Rectangle<float>(770.0f, 81.0f, 36.0f, 10.0f), Justification::centred, false);
-        g.drawText("tie", Rectangle<float>(770.0f, 139.0f, 36.0f, 10.0f), Justification::centred, false);
-        g.drawRoundedRectangle(Rectangle<float>(724.0f, 168.0f, 32.0f, 13.0f), 5.0f, 1.0f);
-        drawLegend(g, "PLAY", Rectangle<float>(724.0f, 168.0f, 32.0f, 13.0f), 9.5f);
-        g.drawText("show", Rectangle<float>(954.0f, 156.0f, 36.0f, 10.0f), Justification::centred, false);
+        for (int k = 0; k < 4; k++)
+            g.drawText(String(k + 1), C(68, by[k], 12, 12), Justification::centred, false);
+        underB(128, 222, "SHAPE");
+        for (int i = 0; i < NLFOSHAPE; i++)
+            small(Rectangle<float>(X(160), Y(199) - 6.0f + 12.0f * (float)i, 60.0f, 12.0f), LFOSHAPE_NAME[i], Justification::centredLeft, 8.5f);
+        under(222, 225, "FREQUENCY", 10.0f);
+        underB(268, 222, "CLK SYNC", 9.0f);
+        under(145, 292, "DESTINATION", 10.0f);
+        under(222, 292, "AMOUNT");
+        underB(268, 288, "KEY SYNC", 9.0f);
     }
-    underB(788, 100, "MODE");
-    under(836, 90, "TRACK");
-    underB(788, 158, "DESTINATION", 9.0f);
-    underB(836, 158, "RECORD");
-    under(893, 90, "PARAMETER");
-    under(893, 150, "VALUE");
-    underB(972, 172, "MISC PARAMS", 9.5f);
-    under(1050, 90, "PROGRAM");
-    under(1050, 150, "BANK");
-    underB(1104, 96, "Global", 9.5f);
-    underB(1104, 131, "Write", 9.5f);
-    underB(1104, 166, "Compare", 9.5f);
-    underB(1148, 96, "Split A|B", 9.5f);
-    underB(1148, 131, "Stack A+B", 9.5f);
-    underB(1148, 166, "Edit Layer B", 9.0f);
-    underB(1215, 100, "ON/OFF");
-    underB(1215, 158, "CLK SYNC");
-    under(1270, 90, "SELECT");
-    under(1327, 90, "MIX");
-    under(1270, 150, "PARAM 1");
-    under(1327, 150, "PARAM 2");
+    under(334, 228, "BPM");
+    under(402, 228, "DIVIDE");
+    underB(370, 288, "TAP TEMPO");
+    underB(476, 222, "MODE");
+    underB(476, 288, "ON/OFF");
+    /* SEQUENCER */
+    {
+        underB(543, 222, "TYPE");
+        small(Rectangle<float>(X(575), Y(215) - 6.5f, 40.0f, 13.0f), "Gated");
+        small(Rectangle<float>(X(575), Y(215) + 6.5f, 40.0f, 13.0f), "Poly");
+        g.setColour(col::legend);
+        g.drawRoundedRectangle(Rectangle<float>(X(560), Y(215) + 6.0f, 46.0f, 14.0f), 6.0f, 1.0f);
+        g.drawArrow(Line<float>(X(573), Y(215) + 21.0f, X(573), Y(288) - 11.0f), 1.0f, 6.0f, 6.0f);
+        small(C(627, 205, 40, 10), "rest", Justification::centred, 8.5f);
+        small(C(627, 271, 40, 10), "tie", Justification::centred, 8.5f);
+        auto pb = C(573, 304, 38, 14);
+        g.setColour(col::legend);
+        g.drawRoundedRectangle(pb, 6.0f, 1.0f);
+        drawLegend(g, "PLAY", pb, 10.0f);
+        underB(627, 222, "MODE");
+        under(682, 225, "TRACK");
+        underB(627, 288, "DESTINATION", 9.5f);
+        underB(682, 288, "RECORD");
+    }
+    underB(747, 222, "ON/OFF");
+    underB(747, 288, "CLK SYNC");
+    under(815, 225, "SELECT");
+    under(880, 225, "MIX");
+    under(815, 292, "PARAM 1");
+    under(880, 292, "PARAM 2");
     {
         const char *top[4] = {"DESTINATION", "ENV AMOUNT", "VELOCITY", "DELAY"}, *bot[4] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
         for (int i = 0; i < 4; i++) {
-            under(1392.0f + 62.0f * (float)i, 90, top[i], 10.0f);
-            under(1392.0f + 62.0f * (float)i, 150, bot[i]);
-            under(1392.0f + 62.0f * (float)i, 228, i == 0 ? "PAN SPREAD" : top[i], 10.0f);
-            under(1392.0f + 62.0f * (float)i, 288, bot[i]);
+            float x = 955.0f + 70.0f * (float)i;
+            under(x, 225, top[i], 10.0f);
+            under(x, 292, bot[i]);
+            under(x, 378, i == 0 ? "PAN SPREAD" : top[i], 10.0f);
+            under(x, 440, bot[i]);
         }
-    }
-    /* VOICES, HOST SYNC */
-    drawSection(g, Rectangle<float>(1618.0f, 63.0f, 178.0f, 127.0f), "VOICES");
-    {
-        g.setFont(font(Face::label, 9.5f));
-        g.setColour(col::legend);
-        g.drawText("8 Voice", Rectangle<float>(1686.0f, 79.0f, 60.0f, 13.0f), Justification::centredLeft, false);
-        g.drawText("16 Voice", Rectangle<float>(1686.0f, 92.0f, 60.0f, 13.0f), Justification::centredLeft, false);
-        g.setFont(font(Face::title, 9.5f));
-        g.drawText("HOST SYNC", Rectangle<float>(1668.0f, 128.0f, 80.0f, 12.0f), Justification::centredLeft, false);
-        g.setFont(font(Face::label, 8.5f));
-        g.drawText("the DAW's tempo and transport", Rectangle<float>(1632.0f, 146.0f, 160.0f, 11.0f), Justification::centredLeft, false);
-        g.drawText("voices playing", Rectangle<float>(1632.0f, 159.0f, 160.0f, 11.0f), Justification::centredLeft, false);
-    }
-    /* LFOs */
-    {
-        g.setFont(font(Face::title, 10.5f));
-        g.setColour(col::legend);
-        for (int k = 0; k < 4; k++)
-            g.drawText(String(k + 1), Rectangle<float>(376.0f, 210.0f + 26.0f * (float)k, 8.0f, 12.0f), Justification::centred, false);
-        underB(446, 232, "SHAPE", 9.5f);
-        g.setFont(font(Face::label, 8.5f));
-        for (int i = 0; i < NLFOSHAPE; i++)
-            g.drawText(LFOSHAPE_NAME[i], Rectangle<float>(474.0f, 205.0f + 10.8f * (float)i, 46.0f, 10.8f), Justification::centredLeft, false);
-        under(548, 228, "FREQUENCY", 9.5f);
-        under(476, 287, "DESTINATION", 9.5f);
-        under(548, 287, "AMOUNT", 10.0f);
-        underB(590, 222, "KEY SYNC", 8.5f);
-        underB(590, 282, "CLK SYNC", 8.5f);
     }
     /* OSCILLATORS */
     {
-        under(642, 228, "OSC 1 FREQ", 9.5f);
-        under(702, 228, "FINE TUNE", 9.5f);
-        underB(746, 228, "SHAPE", 9.5f);
-        under(838, 228, "SHAPE MOD", 9.5f);
-        under(894, 228, "SUB OCTAVE", 9.5f);
-        under(950, 228, "NOISE", 10.0f);
-        g.setFont(font(Face::title, 9.5f));
+        under(85, 378, "OSC 1 FREQ", 10.0f);
+        under(152, 378, "FINE TUNE", 10.0f);
+        underB(205, 370, "SHAPE");
+        under(300, 378, "SHAPE MOD", 10.0f);
+        under(372, 378, "SUB OCTAVE", 10.0f);
+        under(445, 378, "NOISE");
+        g.setFont(font(Face::title, 10.0f));
         g.setColour(col::legend);
-        g.drawText("SYNC", Rectangle<float>(687.0f, 262.0f, 34.0f, 12.0f), Justification::centredLeft, false);
-        under(642, 288, "OSC 2 FREQ", 9.5f);
-        under(702, 288, "FINE TUNE", 9.5f);
-        underB(746, 288, "SHAPE", 9.5f);
-        under(838, 288, "SHAPE MOD", 9.5f);
-        under(894, 288, "OSC MIX", 9.5f);
-        under(950, 288, "OSC SLOP", 9.5f);
-        g.setFont(font(Face::title, 9.0f));
-        g.drawText("1", Rectangle<float>(871.0f, 298.0f, 10.0f, 10.0f), Justification::centred, false);
-        g.drawText("2", Rectangle<float>(907.0f, 298.0f, 10.0f, 10.0f), Justification::centred, false);
-        g.setFont(font(Face::label, 8.5f));
-        const char *SN[4] = {"Sawtooth", "Saw+Tri", "Triangle", "Square"};
-        for (int r = 0; r < 2; r++)
+        g.drawText("SYNC", Rectangle<float>(X(122) + 19.0f, Y(413) - 6.0f, 40.0f, 12.0f), Justification::centredLeft, false);
+        under(85, 440, "OSC 2 FREQ", 10.0f);
+        under(152, 440, "FINE TUNE", 10.0f);
+        underB(205, 432, "SHAPE");
+        under(300, 440, "SHAPE MOD", 10.0f);
+        under(372, 440, "OSC MIX", 10.0f);
+        under(445, 440, "OSC SLOP", 10.0f);
+        g.setFont(font(Face::title, 9.5f));
+        g.drawText("1", C(352, 459, 10, 10), Justification::centred, false);
+        g.drawText("2", C(392, 459, 10, 10), Justification::centred, false);
+        const char *SN[4] = {"Sawtooth", "Saw+Tri", "Triangle", "Pulse"};
+        for (float py : {353.0f, 415.0f})
             for (int i = 0; i < 4; i++)
-                g.drawText(SN[i], Rectangle<float>(775.0f, 207.0f + 60.0f * (float)r + 10.5f * (float)i, 44.0f, 10.5f), Justification::centredLeft, false);
+                small(Rectangle<float>(X(234), Y(py) - 6.0f + 12.0f * (float)i, 60.0f, 12.0f), SN[i], Justification::centredLeft, 8.5f);
     }
     /* LOW-PASS FILTER */
     {
+        const float xs[6] = {520, 590, 662, 735, 808, 880};
         const char *top[6] = {"CUTOFF", "RESONANCE", "ENV AMOUNT", "VELOCITY", "KEY AMOUNT", "AUDIO MOD"};
         for (int i = 0; i < 6; i++)
-            under(1012.0f + 62.5f * (float)i, 228, top[i], 10.0f);
-        underB(1012, 290, "4 POLE");
+            under(xs[i], 378, top[i], 10.0f);
+        underB(518, 437, "4 POLE");
         const char *bot[5] = {"DELAY", "ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
         for (int i = 0; i < 5; i++)
-            under(1074.5f + 62.5f * (float)i, 288, bot[i]);
+            under(xs[i + 1], 440, bot[i]);
     }
-    /* the maker's tag, where the badge is */
-    drawTag(g, Rectangle<float>(1628.0f, 228.0f, 160.0f, 66.0f));
 }
 
 void Panel::paint(juce::Graphics &g)
@@ -1456,12 +1313,12 @@ void Panel::paint(juce::Graphics &g)
         Path p;
         ga.createPath(p);
         auto b = p.getBounds();
-        float w = sixteen ? 62.0f : 30.0f;
-        p.applyTransform(AffineTransform::translation(-b.getX(), -b.getY()).scaled(w / b.getWidth(), 26.0f / b.getHeight()).translated(64.0f, 74.0f));
+        float w = sixteen ? 56.0f : 27.0f, h = 24.0f;
+        p.applyTransform(AffineTransform::translation(-b.getX(), -b.getY()).scaled(w / b.getWidth(), h / b.getHeight()).translated(X(933), Y(117)));
         g.setColour(col::legend);
         g.strokePath(p, PathStrokeType(1.6f));
         g.setFont(font(Face::title, 15.0f));
-        g.drawText("VOICE", Rectangle<float>(72.0f + w, 80.0f, 80.0f, 20.0f), Justification::centredLeft, false);
+        g.drawText("VOICE", Rectangle<float>(X(933) + w + 8.0f, Y(117) + 4.0f, 80.0f, 18.0f), Justification::centredLeft, false);
     }
 }
 
@@ -1472,7 +1329,7 @@ void Panel::timerCallback()
     int sixteen = proc.apvts.getRawParameterValue("voices")->load() > 0.5f ? 16 : 8;
     if (sixteen != shownVoices) {
         shownVoices = sixteen;
-        repaint(juce::Rectangle<int>(60, 70, 200, 34));
+        repaint(juce::Rectangle<int>((int)X(930), (int)Y(112), 200, 40));
     }
 }
 
