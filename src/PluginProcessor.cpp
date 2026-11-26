@@ -43,6 +43,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout ReevesProcessor::createLayou
     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"quality", 1}, "Quality",
                                                             juce::StringArray{"ECO (2x)", "HIGH (4x)"}, 1));
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID{"transpose", 1}, "Transpose", -2, 2, 0));
+    /* LOW SPLIT (on the MIDI notes, LowSplit.h) */
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{"lsplit", 1}, "Low Split",
+                                                            juce::StringArray{"Off", "-1 Oct", "-2 Oct", "-3 Oct"}, 0));
+    layout.add(std::make_unique<juce::AudioParameterInt>(
+        juce::ParameterID{"lsplit_point", 1}, "Low Split Point", 24, 96, 60,
+        juce::AudioParameterIntAttributes().withStringFromValueFunction([](int v, int) {
+            static const char *const N[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+            return juce::String(N[v % 12]) + juce::String(v / 12 - 1);
+        })));
+    layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{"low_hold", 1}, "Low Hold", false));
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"volume", 1}, "Master Volume", juce::NormalisableRange<float>(0.0f, 1.0f), 0.7f,
         juce::AudioParameterFloatAttributes().withStringFromValueFunction([](float v, int) {
@@ -320,6 +330,7 @@ void ReevesProcessor::prepareToPlay(double sampleRate, int)
 {
     uiMidi.reset(sampleRate);
     engine.prepare(sampleRate);
+    lowSplit.forget(true);
     Program cur = currentProgram();             /* (it takes the lock itself: not inside it) */
     {
         juce::SpinLock::ScopedLockType lock(progLock);
@@ -334,9 +345,9 @@ void ReevesProcessor::prepareToPlay(double sampleRate, int)
 void ReevesProcessor::handleMidi(const juce::MidiMessage &m)
 {
     if (m.isNoteOn())
-        engine.noteOn(juce::jlimit(0, 127, m.getNoteNumber() + 12 * transpose), m.getFloatVelocity());
+        lowSplit.noteDown(engine, m.getNoteNumber(), m.getFloatVelocity(), transpose);
     else if (m.isNoteOff())
-        engine.noteOff(juce::jlimit(0, 127, m.getNoteNumber() + 12 * transpose));
+        lowSplit.noteUp(engine, m.getNoteNumber());
     else if (m.isPitchWheel())
         engine.bend((float)(m.getPitchWheelValue() - 8192) / 8192.0f);
     else if (m.isChannelPressure())
@@ -353,8 +364,14 @@ void ReevesProcessor::handleMidi(const juce::MidiMessage &m)
         case 2: engine.breath(v); break;
         case 4: engine.foot(v); break;
         case 11: engine.expression(v); break;
-        case 120: engine.panic(); break;
-        case 123: engine.allOff(); break;
+        case 120:
+            engine.panic();
+            lowSplit.forget(true);
+            break;
+        case 123:
+            engine.allOff();
+            lowSplit.forget(false);
+            break;
         case 121:
             engine.bend(0.0f);
             engine.modWheel(0.0f);
@@ -363,8 +380,10 @@ void ReevesProcessor::handleMidi(const juce::MidiMessage &m)
             break;
         default: break;
         }
-    } else if (m.isAllNotesOff() || m.isAllSoundOff())
+    } else if (m.isAllNotesOff() || m.isAllSoundOff()) {
         engine.allOff();
+        lowSplit.forget(false);
+    }
 }
 
 void ReevesProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midi)
@@ -412,6 +431,9 @@ void ReevesProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiB
         sentVoices = voices;
     }
     transpose = (int)std::lround(apvts.getRawParameterValue("transpose")->load());
+    lowSplit.set(engine, (int)std::lround(apvts.getRawParameterValue("lsplit")->load()),
+                 (int)std::lround(apvts.getRawParameterValue("lsplit_point")->load()),
+                 apvts.getRawParameterValue("low_hold")->load() > 0.5f);
     engine.setQuality(apvts.getRawParameterValue("quality")->load() > 0.5f ? 1 : 0);
 
     /* the panel's commands */
@@ -428,7 +450,10 @@ void ReevesProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiB
             case C_HOLD: engine.hold(c.v != 0); break;
             case C_CHORD: engine.unisonChord(c.layer); break;
             case C_GSTEP: engine.setGatedStep(c.layer, c.a, c.b, c.v); break;
-            case C_PANIC: engine.panic(); break;
+            case C_PANIC:
+                engine.panic();
+                lowSplit.forget(true);
+                break;
             default: break;
             }
         };
