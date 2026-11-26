@@ -10,6 +10,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <atomic>
 #include "Engine.h"
+#include "LowSplit.h"
 #include "Presets.h"
 
 class ReevesProcessor : public juce::AudioProcessor
@@ -98,6 +99,7 @@ private:
     int program = 0;
     float lastGain = -1.0f;
     int transpose = 0;
+    rv::LowSplit lowSplit;                      /* LOW SPLIT on the MIDI notes */
     std::atomic<bool> panicPending{false};
 
     /* a whole program for the engine (a program change, a project opened): taken at the next block */

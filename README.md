@@ -55,6 +55,9 @@ Die Plugins laufen auf Apple Silicon und Intel-Macs (eine Datei für beide).
   repeats, relatch), the **poly sequencer** (64 steps of up to six notes, recorded from the keys with rests and
   ties) and the **gated sequencer** (four tracks of 16 steps, each its own length, SLEW).
 - **UNISON** of 1 to 16 voices with DETUNE and KEY MODE, and CHORD memory.
+- **LOW SPLIT** (on the panel in place of the sequencer): below POINT the left hand plays SPLIT octaves lower (-1 to -3);
+  LOW HOLD keeps the left hand's notes until a new one is played there. It works on the MIDI notes, so both layers,
+  the arp and Split A|B all follow it.
 - **HOST SYNC**: the clocks, synced LFOs and delays follow the DAW's tempo and position.
 - 32 factory programs; WRITE keeps your own (Documents/REEVES/Programs).
 - **Rev2 SysEx import**: click the display, *Import Rev2 SysEx file (.syx)...*: every program in a Prophet Rev2
@@ -71,7 +74,7 @@ their pages; **PARAMETER** picks a line, **VALUE** sets it. With the mouse: the 
 on it picks from a list (or a program), the gated sequencer's steps are drawn with the mouse. **SELECT** in
 MODULATION picks the slot, the LFO buttons 1-4 the LFO the knobs show. **Edit Layer B** shows layer B.
 
-In REEVES, **PLAY** switches the gated sequencer on as well as the poly one.
+The factory programs' sequences still play inside the engine, but the VST's panel has no sequencer controls.
 
 ## Building
 

@@ -1059,63 +1059,21 @@ void Panel::build()
     /* ARP */
     button(476, 222, [this] { openPage(page == P_ARP ? P_HOME : P_ARP); }, [this] { return page == P_ARP; });
     button(476, 288, toggle(L_ARP_ON), isOn(L_ARP_ON));
-    /* SEQUENCER */
+    /* LOW SPLIT (the plugin's own, on the MIDI notes: below POINT the left hand SPLIT octaves down; LOW HOLD) */
     {
-        auto gated = [this] { return proc.value(layer(), L_SEQ_TYPE) == ST_GATED; };
-        button(543, 222,
-               [this, gated] {
-                   int l = layer();
-                   if (proc.value(l, L_SEQ_ON) && !gated())
-                       proc.setValue(l, L_SEQ_ON, 0);
-                   proc.setValue(l, L_SEQ_TYPE, gated() ? ST_POLY : ST_GATED);
-                   touch(l, L_SEQ_TYPE);
-               },
-               [] { return false; });
-        leds(565, 213, 2, LS, [this](int i) { return (proc.value(layer(), L_SEQ_TYPE) == ST_POLY) == (i == 1) ? 1.0f : 0.0f; },
-             [this](int i) { proc.setValue(layer(), L_SEQ_TYPE, i ? ST_POLY : ST_GATED); });
-        button(573, 288,
-               [this] {
-                   int l = layer();
-                   proc.setValue(l, L_SEQ_ON, proc.value(l, L_SEQ_ON) ? 0 : 1);
-                   if (proc.value(l, L_SEQ_TYPE) == ST_POLY)
-                       openPage(P_POLYREC);
-               },
-               isOn(L_SEQ_ON));
-        button(627, 222,
-               [this, gated] {
-                   int l = layer();
-                   if (gated())
-                       openPage(page == P_GSEQ ? P_HOME : P_GSEQ, 0);
-                   else if (proc.recording[l].load())
-                       proc.command(ReevesProcessor::C_REST, l);
-               },
-               [this] { return page == P_GSEQ && item == 0; });
-        encoder(682, 225, [this](int d) {
-            track = juce::jlimit(0, 3, track + d);
-            if (page != P_STEPS)
-                openPage(P_GSEQ, 1 + track);
-        });
-        button(627, 288,
-               [this, gated] {
-                   int l = layer();
-                   if (gated())
-                       openPage(P_GSEQ, 1 + track);
-                   else if (proc.recording[l].load())
-                       proc.command(ReevesProcessor::C_TIE, l);
-               },
-               [this] { return page == P_GSEQ && item > 0; });
-        button(682, 288,
-               [this, gated] {
-                   int l = layer();
-                   if (gated())
-                       openPage(page == P_STEPS ? P_HOME : P_STEPS);
-                   else {
-                       bool rec = proc.recording[l].load();
-                       proc.command(ReevesProcessor::C_RECORD, l, 0, 0, rec ? 0 : 1);
-                       openPage(P_POLYREC);
-                   }
-               },
-               [this] { return page == P_STEPS || proc.recording[layer()].load(); });
+        auto *k = add<Knob>(*this, [glob] { return glob("lsplit"); }, [this](juce::RangedAudioParameter *q) { touchGlobal(q); });
+        place(k, 561, 243, KD, KD);
+        leds(596, 228, 4, LS, [this](int i) { return (int)std::lround(proc.apvts.getRawParameterValue("lsplit")->load()) == i ? 1.0f : 0.0f; },
+             [this, glob](int i) {
+                 auto *q = glob("lsplit");
+                 q->beginChangeGesture();
+                 q->setValueNotifyingHost(q->convertTo0to1((float)i));
+                 q->endChangeGesture();
+                 touchGlobal(q);
+             });
+        auto *pt = add<Knob>(*this, [glob] { return glob("lsplit_point"); }, [this](juce::RangedAudioParameter *q) { touchGlobal(q); });
+        place(pt, 666, 243, KD, KD);
+        button(613, 303, globToggle("low_hold"), [this] { return proc.apvts.getRawParameterValue("low_hold")->load() > 0.5f; });
     }
     /* EFFECT */
     button(747, 222, toggle(L_FX_ON), isOn(L_FX_ON));
@@ -1292,7 +1250,7 @@ void Panel::paintBackground(juce::Graphics &g, float sc)
     const Sec S[] = {{55, 187, 293, 331, "LOW FREQUENCY OSCILLATORS"},
                      {305, 187, 435, 331, "CLOCK"},
                      {447, 187, 505, 331, "ARP"},
-                     {517, 187, 710, 331, "SEQUENCER"},
+                     {517, 187, 710, 331, "LOW SPLIT"},
                      {722, 187, 908, 331, "EFFECT"},
                      {920, 187, 1195, 331, "AUXILIARY ENVELOPE"},
                      {55, 341, 476, 483, "OSCILLATORS"},
@@ -1322,24 +1280,14 @@ void Panel::paintBackground(juce::Graphics &g, float sc)
     underB(370, 288, "TAP TEMPO");
     underB(476, 222, "MODE");
     underB(476, 288, "ON/OFF");
-    /* SEQUENCER */
+    /* LOW SPLIT */
     {
-        underB(543, 222, "TYPE");
-        small(Rectangle<float>(X(565) + 9.0f, Y(213) - LS, 60.0f, LS), "Gated");
-        small(Rectangle<float>(X(565) + 9.0f, Y(213), 60.0f, LS), "Poly");
-        g.setColour(col::legend);
-        g.drawRoundedRectangle(Rectangle<float>(X(565) - 10.0f, Y(213) - 1.0f, 60.0f, LS + 2.0f), 7.0f, 1.2f);
-        g.drawArrow(Line<float>(X(573), Y(213) + LS + 2.0f, X(573), Y(288) - 13.0f), 1.2f, 7.0f, 7.0f);
-        small(C(627, 203, 50, 14), "rest", Justification::centred, 8.5f);
-        small(C(627, 269, 50, 14), "tie", Justification::centred, 8.5f);
-        auto pb = C(573, 307, 50, 17);
-        g.setColour(col::legend);
-        g.drawRoundedRectangle(pb, 6.0f, 1.0f);
-        drawLegend(g, "PLAY", pb, 10.0f * FS);
-        underB(627, 222, "MODE");
-        under(682, 225, "TRACK");
-        underB(627, 288, "DESTINATION", 9.5f);
-        underB(682, 288, "RECORD");
+        under(561, 243, "SPLIT");
+        const char *names[4] = {"Off", "-1 Oct", "-2 Oct", "-3 Oct"};
+        for (int i = 0; i < 4; i++)
+            small(Rectangle<float>(X(596) + 9.0f, Y(228) - LS * 0.5f + LS * (float)i, 70.0f, LS), names[i]);
+        under(666, 243, "POINT");
+        underB(613, 303, "LOW HOLD");
     }
     underB(747, 222, "ON/OFF");
     underB(747, 288, "CLK SYNC");
