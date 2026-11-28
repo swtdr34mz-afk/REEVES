@@ -129,9 +129,14 @@ struct BlRing {
  *   PULSE      the pulse's width (0.5 a square)
  * As piecewise-linear pieces: the value at a phase, and its corners (a jump in value, a change of slope) */
 struct Wave {
+    /* The Rev2's DCO shapes, as measured from a Rev2 (recordings of every shape at SHAPE MOD 0 / 25 / 50 / 75 / 99, notes
+     * E0 to G6): SHAPE MOD is a pulse width for every shape. At 0 the plain wave; turned up, a pulse of that width is
+     * added (the saw gets a second drop that moves from the end to the start, the triangle and saw+tri a step that moves
+     * from the start to the end), and PULSE is that pulse alone (0: a needle, 50: about a square at 64 %, 99: a needle
+     * the other way). Measured fits: within 10 to 20 % of the recordings' shape (the old model: 45 to 65 %). */
     int shape = 1;
     float pk = 0.5f;                  /* the triangle's peak */
-    float sw = 0.0f, spos = 0.5f;     /* the saw's second drop: its height, where */
+    float sw = 0.0f, spos = 0.5f;     /* the added pulse: its step (down) and where */
     float pw = 0.5f;
     float wSaw = 0, wTri = 0, wPul = 0, dc = 0;
     void set(int shp, float m)
@@ -139,24 +144,36 @@ struct Wave {
         shape = shp;
         m = clampf(m, 0.0f, 1.0f);
         wSaw = wTri = wPul = dc = sw = 0.0f;
+        /* the pulse's width (measured: 25 -> 0.27, 50 -> 0.60, 75 -> 0.93, 99 -> 0.965) */
+        float w = clampf(-0.06f + 1.31f * m, 0.0f, 0.965f);
         switch (shp) {
-        case 1:                               /* SAW: the second drop's height and place */
+        case 1:                               /* SAW: + 0.34 x the pulse, its drop at 1 - w */
             wSaw = 1.0f;
-            sw = std::fabs(m - 0.5f) * 2.0f;
-            spos = m < 0.5f ? 0.5f - 0.4f * sw : 0.5f + 0.4f * sw;
+            if (w > 0.003f) {
+                sw = 0.68f;
+                spos = 1.0f - w;
+            }
             break;
-        case 2:                               /* SAW + TRI */
-            wSaw = 0.6f;
-            wTri = 0.6f;
-            pk = clampf(0.05f + 0.9f * (1.0f - m), 0.05f, 0.95f);
+        case 2:                               /* SAW + TRI: rises to 0.675, falls to the wrap; + 0.6 x the pulse at w */
+            wSaw = 0.45f;
+            wTri = 0.697f;
+            pk = 0.675f;
+            if (w > 0.003f) {
+                sw = 1.2f;
+                spos = w;
+            }
             break;
-        case 3:                               /* TRIANGLE: the peak moves */
+        case 3:                               /* TRIANGLE: + 0.55 x the pulse at w */
             wTri = 1.0f;
-            pk = clampf(0.02f + 0.96f * (1.0f - m), 0.02f, 0.98f);
+            pk = 0.5f;
+            if (w > 0.003f) {
+                sw = 1.1f;
+                spos = w;
+            }
             break;
-        case 4:                               /* PULSE */
+        case 4:                               /* PULSE: 0.01 to 0.985 */
             wPul = 1.0f;
-            pw = clampf(m, 0.02f, 0.98f);
+            pw = clampf(0.01f + 1.26f * m, 0.01f, 0.985f);
             dc = 2.0f * pw - 1.0f;
             break;
         default: break;
@@ -165,11 +182,10 @@ struct Wave {
     inline float at(float ph) const          /* the value at a phase */
     {
         float y = 0.0f;
-        if (wSaw > 0.0f) {
+        if (wSaw > 0.0f)
             y += wSaw * (2.0f * ph - 1.0f);
-            if (sw > 0.0f)
-                y += wSaw * sw * (ph < spos ? 0.5f : -0.5f);
-        }
+        if (sw > 0.0f)
+            y += sw * ((ph < spos ? 0.5f : -0.5f) - (spos - 0.5f));
         if (wTri > 0.0f)
             y += wTri * (ph < pk ? -1.0f + 2.0f * ph / pk : 1.0f - 2.0f * (ph - pk) / (1.0f - pk));
         if (wPul > 0.0f)
@@ -204,7 +220,7 @@ struct Osc {
         if (w.wPul > 0.0f)
             cross(w.pw, -2.0f, 0.0f);
         if (w.sw > 0.0f)
-            cross(w.spos, -w.wSaw * w.sw, 0.0f);
+            cross(w.spos, -w.sw, 0.0f);
         if (w.wTri > 0.0f)
             cross(w.pk, 0.0f, w.triSlope(w.pk) - w.triSlope(w.pk * 0.999f));
     }

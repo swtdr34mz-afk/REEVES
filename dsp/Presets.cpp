@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 swtdr34mz (REEVES) */
 #include "Presets.h"
+#include "Dsp.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <initializer_list>
 #include <utility>
@@ -15,6 +18,8 @@ struct B {
     {
         programInit(p);
         std::snprintf(p.name, NAME_LEN, "%s", name);
+        for (auto &L : p.layer)          /* (the programs were voiced with SHAPE MOD 50 the plain wave: see newShape) */
+            L[L_O1_SHMOD] = L[L_O2_SHMOD] = 50;
     }
     /* set a layer's parameters (both layers: l = -1) */
     B &set(std::initializer_list<std::pair<int, int>> kv, int l = -1)
@@ -374,8 +379,26 @@ Program make(int i)
 }
 } // namespace
 
+/* The programs were voiced when SHAPE MOD's middle was the plain wave; since the Rev2's measured shape modulation
+ * (Dsp.h, Wave), 0 is. Their values brought over: a pulse keeps its width, the other shapes their distance from the
+ * plain wave. */
+Program newShape(Program p)
+{
+    for (auto &L : p.layer)
+        for (int o = 0; o < 2; o++) {
+            int sh = L[o ? L_O2_SHAPE : L_O1_SHAPE];
+            int16_t &m = L[o ? L_O2_SHMOD : L_O1_SHMOD];
+            float old = (float)m / 99.0f;
+            if (sh == SH_PULSE)
+                m = (int16_t)std::clamp((int)std::lround((clampf(old, 0.02f, 0.98f) - 0.01f) / 1.26f * 99.0f), 0, 99);
+            else
+                m = (int16_t)std::clamp((int)std::lround(std::fabs(old - 0.5f) * 2.0f * 99.0f * 0.5f), 0, 99);
+        }
+    return p;
+}
+
 const Program FACTORY[NFACTORY] = {
-    make(0),  make(1),  make(2),  make(3),  make(4),  make(5),  make(6),  make(7),  make(8),  make(9),  make(10),
-    make(11), make(12), make(13), make(14), make(15), make(16), make(17), make(18), make(19), make(20), make(21),
-    make(22), make(23), make(24), make(25), make(26), make(27), make(28), make(29), make(30), make(31)};
+    newShape(make(0)),  newShape(make(1)),  newShape(make(2)),  newShape(make(3)),  newShape(make(4)),  newShape(make(5)),  newShape(make(6)),  newShape(make(7)),  newShape(make(8)),  newShape(make(9)),  newShape(make(10)),
+    newShape(make(11)), newShape(make(12)), newShape(make(13)), newShape(make(14)), newShape(make(15)), newShape(make(16)), newShape(make(17)), newShape(make(18)), newShape(make(19)), newShape(make(20)), newShape(make(21)),
+    newShape(make(22)), newShape(make(23)), newShape(make(24)), newShape(make(25)), newShape(make(26)), newShape(make(27)), newShape(make(28)), newShape(make(29)), newShape(make(30)), newShape(make(31))};
 } // namespace rv
