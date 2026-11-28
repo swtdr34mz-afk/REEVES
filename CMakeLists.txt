@@ -36,11 +36,15 @@ endif()
 if(APPLE)
     list(APPEND REEVES_FORMATS AU)
 endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    list(APPEND REEVES_FORMATS LV2)
+endif()
 
 juce_add_plugin(Reeves
     PRODUCT_NAME "REEVES"
     COMPANY_NAME "swtdr34mz"
     BUNDLE_ID "com.swtdr34mz.reeves"
+    LV2URI "https://github.com/swtdr34mz-afk/REEVES"
     PLUGIN_MANUFACTURER_CODE Swtd
     PLUGIN_CODE Rvs2
     FORMATS ${REEVES_FORMATS}

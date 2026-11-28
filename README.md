@@ -40,6 +40,8 @@ Die Plugins laufen auf Apple Silicon und Intel-Macs (eine Datei für beide).
 
 **MPC:** siehe [mpc/plugin/README.md](mpc/plugin/README.md).
 
+**Linux (Bitwig, Reaper, Ardour, ...):** Die `.tar.gz` entpacken. `REEVES.vst3` nach `~/.vst3/` kopieren, `REEVES.lv2` nach `~/.lv2/`. Die App `REEVES` startet auch ohne DAW. 64 Bit, gebaut auf Ubuntu 22.04.
+
 ## What it has
 
 - **8 or 16 voices** (VOICES on the panel: the Rev2's two models), shared by the two layers: SINGLE gives all to A,
