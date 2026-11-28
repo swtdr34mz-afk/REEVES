@@ -1190,7 +1190,8 @@ void Engine::voiceChunk(Voice &v, float *Lo, float *Ro)
     float mix = clampf((float)P[L_OSC_MIX] + d[MD_OSC_MIX], 0.0f, 127.0f) / 127.0f;
     tgt[SM_G1] = 0.5f * minf(1.0f, 2.0f * (1.0f - mix)) * clampf(1.0f + d[MD_OSC1_LEVEL] / 127.0f, 0.0f, 2.0f);
     tgt[SM_G2] = 0.5f * minf(1.0f, 2.0f * mix);
-    tgt[SM_GS] = 0.5f * clampf((float)P[L_SUB] + d[MD_SUB], 0.0f, 127.0f) / 127.0f;
+    /* (measured: at 100 the Rev2's sub is 5.5 dB under the saw's fundamental) */
+    tgt[SM_GS] = 0.148f * clampf((float)P[L_SUB] + d[MD_SUB], 0.0f, 127.0f) / 127.0f;
     tgt[SM_GN] = 0.6f * clampf((float)P[L_NOISE] + d[MD_NOISE], 0.0f, 127.0f) / 127.0f * std::sqrt(sr / 44100.0f);
     tgt[SM_CUT] = oct0;
     tgt[SM_ENV] = envOct;
