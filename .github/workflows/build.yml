@@ -192,7 +192,7 @@ jobs:
         run: |
           curl -sSL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Linux.zip
           unzip -q pluginval.zip
-          for i in 1 2 3 4 5 6; do echo "=== run $i"; xvfb-run -a gdb -batch -return-child-result -ex run -ex "thread apply all bt 30" --args ./pluginval --strictness-level 8 --timeout-ms 600000 --validate "build/Reeves_artefacts/Release/VST3/REEVES.vst3" > run$i.log 2>&1; echo "exit $?"; grep -n -A60 "SIGSEGV\|SIGABRT" run$i.log | head -150; done
+          for i in 1 2 3 4 5 6; do echo "=== run $i"; xvfb-run -a gdb -batch -return-child-result -ex run -ex "thread apply all bt 30" --args ./pluginval --strictness-level 8 --timeout-ms 600000 --validate "build/Reeves_artefacts/Release/VST3/REEVES.vst3" > run$i.log 2>&1; echo "exit $?"; grep -n -A60 "SIGSEGV\|SIGABRT" run$i.log | head -150 || true; done
 
       - name: package (Linux)
         if: runner.os == 'Linux'
