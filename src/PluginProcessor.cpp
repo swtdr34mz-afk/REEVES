@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MPL-2.0
  * Copyright (C) 2026 swtdr34mz (REEVES) */
 #include "PluginProcessor.h"
+#include "PanelDialog.h"
 #include "Rev2Syx.h"
 #include "PluginEditor.h"
 
@@ -203,7 +204,7 @@ void ReevesProcessor::setCompare(bool on)
 
 juce::File ReevesProcessor::programFolder()
 {
-    return juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("REEVES").getChildFile("Programs");
+    return pdlg::docsOrAppData().getChildFile("REEVES").getChildFile("Programs");
 }
 
 void ReevesProcessor::programToXml(const Program &p, juce::XmlElement &x)

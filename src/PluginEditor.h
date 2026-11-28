@@ -82,6 +82,7 @@ class ReevesEditor : public juce::AudioProcessorEditor
 public:
     explicit ReevesEditor(ReevesProcessor &);
     void resized() override;
+    bool sized = false;                      /* (resizes during the constructor keep nothing) */
 
 private:
     ReevesProcessor &proc;
