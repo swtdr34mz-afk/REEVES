@@ -51,7 +51,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ReevesProcessor::createLayou
         juce::ParameterID{"lsplit_point", 1}, "Low Split Point", 24, 96, 60,
         juce::AudioParameterIntAttributes().withStringFromValueFunction([](int v, int) {
             static const char *const N[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-            return juce::String(N[v % 12]) + juce::String(v / 12 - 1);
+            return juce::String(N[v % 12]) + juce::String(v / 12 - 2);   /* (as Cubase names them: note 60 is C3) */
         })));
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{"low_hold", 1}, "Low Hold", false));
     layout.add(std::make_unique<juce::AudioParameterFloat>(
