@@ -121,11 +121,11 @@ jobs:
 
       - name: dependencies (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq $LINUX_DEPS gdb
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq $LINUX_DEPS
 
       - name: configure
         shell: bash
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-g -DCMAKE_C_FLAGS=-g
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: build
         shell: bash
@@ -192,7 +192,7 @@ jobs:
         run: |
           curl -sSL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Linux.zip
           unzip -q pluginval.zip
-          xvfb-run -a gdb -batch -ex run -ex "thread apply all bt 25" --args ./pluginval --strictness-level 8 --timeout-ms 600000 --validate "build/Reeves_artefacts/Release/VST3/REEVES.vst3"
+          xvfb-run -a ./pluginval --strictness-level 8 --timeout-ms 600000 --validate "build/Reeves_artefacts/Release/VST3/REEVES.vst3"
 
       - name: package (Linux)
         if: runner.os == 'Linux'
