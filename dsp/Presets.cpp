@@ -120,13 +120,17 @@ Program make(int i)
     switch (i) {
     case 0: {
         B b = pad("Rev Pad");
+        /* the Rev2's moving saw: a slow LFO 3 through both oscillators' SHAPE MOD */
+        b.set({{L_O1_SHMOD, 56}, {L_O2_SHMOD, 58}});
+        b.lfo(2, 30, LS_TRI, 26, MD_OSC_SHAPE);
         return b;
     }
     case 1: {
         B b("Brass Section");
         b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_SAW}, {L_O2_FINE, 9}, {L_SLOP, 24}, {L_CUTOFF, 58}, {L_RESO, 12},
                {L_FENV_AMT, 70}, {L_FATT, 52}, {L_FDEC, 78}, {L_FSUS, 56}, {L_FREL, 70}, {L_FVEL, 40}, {L_AATT, 40},
-               {L_ADEC, 70}, {L_ASUS, 118}, {L_AREL, 72}, {L_KEYAMT, 40}, {L_PAN_SPREAD, 60}});
+               {L_ADEC, 70}, {L_ASUS, 118}, {L_AREL, 72}, {L_KEYAMT, 40}, {L_PAN_SPREAD, 60},
+               {L_O2_SHMOD, 66}});                /* (oscillator 2's second drop: the brass's reedy bite) */
         b.lfo(0, 64, LS_TRI, 0, MD_OSC_FREQ).mod(0, MS_MODWHEEL, MD_LFO1_AMT, 12);
         b.set({{L_FX_ON, 1}, {L_FX_TYPE, FX_REVERB}, {L_FX_MIX, 28}, {L_FX_P1, 110}, {L_FX_P2, 70}});
         return b;
@@ -153,7 +157,7 @@ Program make(int i)
     }
     case 4: {
         B b("Fat Unison Bass");
-        b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_PULSE}, {L_O1_FREQ, 24}, {L_O2_FREQ, 24}, {L_SUB, 90},
+        b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_PULSE}, {L_O1_FREQ, 24}, {L_O2_FREQ, 24}, {L_SUB, 127},
                {L_CUTOFF, 40}, {L_RESO, 34}, {L_FENV_AMT, 66}, {L_FDEC, 66}, {L_FSUS, 10}, {L_FREL, 50}, {L_FVEL, 40},
                {L_AREL, 30}, {L_UNISON, 1}, {L_UNI_MODE, 6}, {L_UNI_DETUNE, 4}, {L_KEY_MODE, KM_LOW}, {L_SLOP, 18},
                {L_KEYAMT, 40}});
@@ -189,7 +193,7 @@ Program make(int i)
     }
     case 9: {
         B b("Gated Bassline");
-        b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_PULSE}, {L_O2_FREQ, 24}, {L_SUB, 60}, {L_CUTOFF, 50},
+        b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_PULSE}, {L_O2_FREQ, 24}, {L_SUB, 127}, {L_CUTOFF, 50},
                {L_RESO, 50}, {L_FENV_AMT, 60}, {L_FDEC, 56}, {L_FSUS, 0}, {L_ADEC, 64}, {L_ASUS, 40}, {L_AREL, 30},
                {L_SEQ_ON, 1}, {L_SEQ_TYPE, ST_GATED}, {L_SEQ_D1, MD_OSC_FREQ}, {L_SEQ_D3, MD_CUTOFF}, {L_DIVIDE, DV_16}});
         b.gated(0, 0, {0, 0, 12, 0, 7, 0, 10, 12, 0, 0, 15, 0, 7, 12, 3, 5});
@@ -272,7 +276,7 @@ Program make(int i)
     }
     case 19: {
         B b("Sub Drone");
-        b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_SAW}, {L_O1_FREQ, 24}, {L_O2_FREQ, 31}, {L_SUB, 70},
+        b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_SAW}, {L_O1_FREQ, 24}, {L_O2_FREQ, 31}, {L_SUB, 127},
                {L_VCA_LEVEL, 127}, {L_AENV_AMT, 0}, {L_CUTOFF, 56}, {L_RESO, 70}, {L_E3_DEST, MD_CUTOFF},
                {L_E3_AMT, 50}, {L_E3ATT, 96}, {L_E3DEC, 98}, {L_E3SUS, 0}, {L_E3_REPEAT, 1}, {L_SLOP, 60},
                {L_PGM_VOL, 60}, {L_FX_ON, 1}, {L_FX_TYPE, FX_REVERB}, {L_FX_MIX, 50}, {L_FX_P1, 200}, {L_FX_P2, 60}});
@@ -282,7 +286,7 @@ Program make(int i)
     case 20: {
         B b("Wobble");
         b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_PULSE}, {L_O1_FREQ, 24}, {L_O2_FREQ, 24}, {L_O2_FINE, 8},
-               {L_SUB, 80}, {L_CUTOFF, 44}, {L_RESO, 60}, {L_AREL, 30}, {L_UNISON, 1}, {L_UNI_MODE, 4},
+               {L_SUB, 127}, {L_CUTOFF, 44}, {L_RESO, 60}, {L_AREL, 30}, {L_UNISON, 1}, {L_UNI_MODE, 4},
                {L_UNI_DETUNE, 3}, {L_FX_ON, 1}, {L_FX_TYPE, FX_DISTORTION}, {L_FX_MIX, 50}, {L_FX_P1, 70}, {L_FX_P2, 60},
                {L_PGM_VOL, 75}});
         b.lfo(1, 80, LS_TRI, 70, MD_CUTOFF, 1, 1);
@@ -325,7 +329,8 @@ Program make(int i)
         B b = pad("Warm Strings");
         b.set({{L_O1_SHAPE, SH_SAW}, {L_O2_SHAPE, SH_SAW}, {L_O2_FREQ, 48}, {L_OSC_MIX, 50}, {L_CUTOFF, 92},
                {L_FENV_AMT, 16}, {L_AATT, 74}, {L_AREL, 90}, {L_FX_TYPE, FX_CHORUS}, {L_FX_MIX, 90}, {L_FX_P1, 50},
-               {L_FX_P2, 110}});
+               {L_FX_P2, 110}, {L_O2_SHMOD, 62}});
+        b.lfo(2, 38, LS_TRI, 22, MD_OSC2_SHAPE);   /* (the upper octave's saw moving, as string ensembles do) */
         return b;
     }
     case 26: {
@@ -339,7 +344,7 @@ Program make(int i)
     }
     case 27: {
         B b("Organ Gate");                       /* the manual's 'gated VCA': a square LFO on the amp */
-        b.set({{L_O1_SHAPE, SH_PULSE}, {L_O1_SHMOD, 50}, {L_O2_SHAPE, SH_TRI}, {L_O2_FREQ, 48}, {L_SUB, 60},
+        b.set({{L_O1_SHAPE, SH_PULSE}, {L_O1_SHMOD, 50}, {L_O2_SHAPE, SH_TRI}, {L_O2_FREQ, 48}, {L_SUB, 127},
                {L_CUTOFF, 110}, {L_AENV_AMT, 0}, {L_AREL, 20}, {L_FX_ON, 1}, {L_FX_TYPE, FX_CHORUS}, {L_FX_MIX, 60},
                {L_FX_P1, 90}, {L_FX_P2, 60}});
         b.lfo(0, 96, LS_SQUARE, 127, MD_VCA, 1, 1);
@@ -397,8 +402,18 @@ Program newShape(Program p)
     return p;
 }
 
+/* The programs' levels evened out (measured: the loudest 100 ms of a chord, aimed at -19 dB; the sequences' and the
+ * arp's never cut), in percent of their PROGRAM VOLUME */
+const int LEVEL[NFACTORY] = {126,90,77,127,96,127,181,127,127,127,80,93,68,59,127,116,37,46,127,125,61,127,103,127,127,127,124,60,127,55,127,32};
+Program level(Program p, int pct)
+{
+    for (auto &L : p.layer)
+        L[L_PGM_VOL] = (int16_t)std::clamp((int)std::lround(L[L_PGM_VOL] * pct / 100.0), 0, 127);
+    return p;
+}
+
 const Program FACTORY[NFACTORY] = {
-    newShape(make(0)),  newShape(make(1)),  newShape(make(2)),  newShape(make(3)),  newShape(make(4)),  newShape(make(5)),  newShape(make(6)),  newShape(make(7)),  newShape(make(8)),  newShape(make(9)),  newShape(make(10)),
-    newShape(make(11)), newShape(make(12)), newShape(make(13)), newShape(make(14)), newShape(make(15)), newShape(make(16)), newShape(make(17)), newShape(make(18)), newShape(make(19)), newShape(make(20)), newShape(make(21)),
-    newShape(make(22)), newShape(make(23)), newShape(make(24)), newShape(make(25)), newShape(make(26)), newShape(make(27)), newShape(make(28)), newShape(make(29)), newShape(make(30)), newShape(make(31))};
+    level(newShape(make(0)), LEVEL[0]),  level(newShape(make(1)), LEVEL[1]),  level(newShape(make(2)), LEVEL[2]),  level(newShape(make(3)), LEVEL[3]),  level(newShape(make(4)), LEVEL[4]),  level(newShape(make(5)), LEVEL[5]),  level(newShape(make(6)), LEVEL[6]),  level(newShape(make(7)), LEVEL[7]),  level(newShape(make(8)), LEVEL[8]),  level(newShape(make(9)), LEVEL[9]),  level(newShape(make(10)), LEVEL[10]),
+    level(newShape(make(11)), LEVEL[11]), level(newShape(make(12)), LEVEL[12]), level(newShape(make(13)), LEVEL[13]), level(newShape(make(14)), LEVEL[14]), level(newShape(make(15)), LEVEL[15]), level(newShape(make(16)), LEVEL[16]), level(newShape(make(17)), LEVEL[17]), level(newShape(make(18)), LEVEL[18]), level(newShape(make(19)), LEVEL[19]), level(newShape(make(20)), LEVEL[20]), level(newShape(make(21)), LEVEL[21]),
+    level(newShape(make(22)), LEVEL[22]), level(newShape(make(23)), LEVEL[23]), level(newShape(make(24)), LEVEL[24]), level(newShape(make(25)), LEVEL[25]), level(newShape(make(26)), LEVEL[26]), level(newShape(make(27)), LEVEL[27]), level(newShape(make(28)), LEVEL[28]), level(newShape(make(29)), LEVEL[29]), level(newShape(make(30)), LEVEL[30]), level(newShape(make(31)), LEVEL[31])};
 } // namespace rv
