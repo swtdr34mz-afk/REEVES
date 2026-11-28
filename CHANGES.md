@@ -4,6 +4,13 @@ The newest first. To release a new version: raise the number in VERSION and put 
 "## <the new number>". After the merge into main the release is made by itself (auto-release.yml), the
 downloads are built into it, and the website and the Discord post follow.
 
+## 1.2.0
+The oscillators re-voiced from recordings of a real Prophet Rev2 (thanks to the user who recorded 600 notes of his Rev2):
+- SHAPE MOD now works as on the Rev2: at 0 every shape is the plain wave; turned up, a pulse of that width is added - the saw gets a second drop that moves through the wave, triangle and saw+tri a moving step, and PULSE goes from a thin needle through about square to a needle the other way.
+- SAW + TRI has the Rev2's own lopsided shape.
+- The SUB OCTAVE is about 10 dB quieter, as on the Rev2.
+- Imported Rev2 programs (.syx) now sound much closer to the originals. The factory programs are re-voiced to sound as before; your own saved sounds that use SHAPE MOD may sound different.
+
 ## 1.1.6
 New: REEVES for Linux - VST3, LV2 and a standalone app (64-bit, built on Ubuntu 22.04). Checked with pluginval like the Windows version.
 
