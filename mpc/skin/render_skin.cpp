@@ -363,7 +363,7 @@ String valueText(const String &id, int v)
         return r.names[v - r.lo];
     if (id == "split_point") {
         static const char *N[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        return String(N[v % 12]) + String(v / 12 - 1);
+        return String(N[v % 12]) + String(v / 12 - 2);   /* (note 60: C3, as the VST shows it) */
     }
     return String(v);
 }

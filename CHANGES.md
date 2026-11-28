@@ -8,6 +8,7 @@ downloads are built into it, and the website and the Discord post follow.
 The factory sounds re-voiced for the new oscillators:
 - Basses and leads with SUB OCTAVE get their low end back (the sub is quieter since 1.2.0, so it's turned up).
 - All 32 sounds evened out in level, so none jumps out when you step through them.
+- Split points shown as Cubase names notes: LOW SPLIT's POINT starts on C3 (note 60), as does Split A|B (both used to say C4 for the same note on some screens).
 - More Rev2 character: Rev Pad and Warm Strings now have the Rev2's slowly moving saw (an LFO on SHAPE MOD), Brass Section a bit of reedy bite from oscillator 2's SHAPE MOD.
 
 ## 1.2.0
